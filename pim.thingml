@@ -1,0 +1,740 @@
+/* ThingML Framework */
+
+// Base datatypes
+import "datatypes.thingml"
+
+// Import everything in core [where is core?]
+// import "core/scheduler.thingml"
+// import "core/timer.thingml"
+
+/* PSM must be included */
+import "psm_sim.thingml"
+import "psm_datatypes_sim.thingml"
+import "pim_messages.thingml"
+import "timer.thingml"
+/*thing TimePeriods includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, TimePeriods{
+	provided port human_input{
+		receives add_period
+	}
+	function set_tpinfo()do end
+}*/
+
+thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
+	provided port get_sensor {
+		receives temperature
+	}
+	required port request_sensor {
+		sends add_thermometer, set_polling_interval
+	}
+	required port request_actuator{
+		sends add_device, SwitchOn, SwitchOff, add_period
+	}
+	provided port human_input {
+		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, set_polling_interval, add_period
+	}
+	required port human_output {
+		sends temperature, prompt
+	}
+	
+	//timer ports - it does not hold to include TimerClient since it only has one port and therefore cannot distinguish between two timers
+	required port guard_temperature
+    {
+		receives timer_timeout
+		sends timer_start, timer_cancel
+	}
+    
+	required port guard_human
+    {
+		receives timer_timeout
+		sends timer_start, timer_cancel
+	}
+    
+	property tmrature:Double = 20 // the requested temperature for the room
+	property thermo_id:Integer // the single thermometer identifier
+	property thermo_w:Double //The single thermometer weight
+	property thermo_n:String //The single thermometer name
+	property switch_id:Integer // the single on-off switch identifier
+	
+	property lasttemp:Double = 0 // the last temperature recorded, buffering one measurement
+	
+	//Oblig 2 variabler
+	/*Help varibles*/
+	property ant_t:Integer = 0 //Number of thermos
+	property ant_d:Integer = 0 //Number of devices
+	property i:Integer = 0 //make sure it's set to 0 all the time
+	property temptemp:Double = 0
+	property guard_temp:Double = 0
+	property capacity:Integer = 10 //kapasitet til arrays
+	property temp_iarray:Integer[capacity] //Help array to be used in functions
+	property temp_sarray:String[capacity] //Help array to be used in functions
+	property temp_darray:Double[capacity] //Help array to be used in functions
+	/*Thermometer variabler*/
+	property tid_array:Integer[capacity] //Id til thermometers
+	property tname_array:String[capacity] //names til thermometers
+	property twight_array:Double[capacity] //wight til termometre
+	property ttemp_array:Double[capacity] //temperature til themrometre
+	/*THermometer functions*/
+	function tid_check(tid:Integer):Integer do	//Funksjonene sjekker om verdiene er gyldig.
+		if(tid <= 0)do
+			human_output!prompt("Thermo ID can't be zero or negative number")
+			return 1
+		end		return -1
+	end
+	function set_tinfo(tid:Integer, tname:String, twight:Double, ttemp:Double, id_array:Integer[capacity]):Boolean do 	//Funksjonen tarr inn alle verdiene å setter dem inn i arrays. 
+		if(tparameter_check(tid,twight,ttemp) == 1) do
+			i = get_tid_e_pos(id_array)
+			set_id(tid, i, id_array)
+			set_name(tid, tname, tname_array, id_array)
+			set_weight(tid, twight, id_array)
+
+			return true
+		end
+		human_output!prompt("ALERT: Check parameters!")
+		i = 0
+		return false
+	end
+	
+	function tparameter_check(tid:Integer, twight:Double, ttemp:Double):Integer do 
+		if(tid_array[capacity-1] != 0)do return -1 end
+		if(tid <= 0) do	return -1 end
+		if(tid_u_check(tid, tid_array) == 1)do return -1 end
+		if(twight <= 0)do return -1	end
+		if(ttemp < -40 and ttemp > 50)do return -1 end
+		return 1
+	end
+	
+	function tid_u_check(tid:Integer, arr:Integer[capacity]):Integer do
+		i = 0
+		while(i < capacity)do
+			if(arr[0] == 0) return -1 
+			if(tid == arr[i]) return 1
+			i = i + 1
+		end
+		i = 0
+		return -1
+	end
+	
+	function set_id(id:Integer, e_pos:Integer, id_array:Integer[capacity]) do //Set id into array tid_array
+		id_array[e_pos] = id
+	end
+	
+	function set_name(id:Integer, name:String, arr:String[capacity], id_array:Integer[capacity]) do
+ 		i = id_pos(id, id_array)
+		arr[i] = name
+		i = 0
+ 	end
+ 	
+	function set_weight(tid:Integer, wight:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		twight_array[i] = wight i = 0	end 	//*Set wight that are equale to ID
+	function set_wtemp(tid:Integer, temp:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		ttemp_array[i] = temp * twight_array[i]	i = 0 end 	//Set calculated(temp*weight) 
+	//function set_dcat(did:Integer, dcat:Integer, id_array:Integer[]) do i = id_pos(did, id_array) 		dcat_array[i] = dcat i = 0 end	//set device category into dcat_array
+	function calc_temp(tid:Integer, temp:Double, w:Double):Double do //calculates temperatured with weights
+		i = id_pos(tid, tid_array)
+		temptemp = ttemp_array[i]*twight_array[i]
+		i = 0
+		return temptemp
+	end
+	
+	function calc_all_temp():Double do // Sum of all calculated temperatures
+		temptemp = 0
+		i = 0
+		while(i < capacity)do
+			temptemp = temptemp + ttemp_array[i]
+			i = i + 1
+		end
+		i = 0
+		return temptemp
+	end
+	
+	function id_pos(id:Integer, id_arr:Integer[]):Integer do	//Return position to given ID
+		i = 0
+		while( i < capacity) do 
+			if(id_arr[i] == id) return i
+			i = i + 1
+		end 
+		i = 0
+		return -1
+	end
+	
+	function get_tid_e_pos(arr:Integer[]):Integer do 	//Return first empty position i tid_array[] 
+		i = 0
+		while(i < capacity) do
+			if(arr[i] == 0) do
+				return i
+			end
+			i = i + 1 
+		end
+		i = 0
+		return -1
+	end	
+	
+	//*Function: Set thermo id in empty position
+	//function set_tid(tid:Integer, e_pos:Integer) do	i = get_tid_e_pos() 		tid_array[i] = tid	end
+	//*Set name verdi på plass som tilsvarer id*/
+	//function set_name(tid:Integer, name:String) do 	i = id_pos(tid)		tname_array[i] = name	end
+	
+	/*Device variabls*/
+	property did_array:Integer[capacity] //Id beholder
+	property dname_array:String[capacity] //Name Beholder
+	property dcat_array:Integer[capacity] //Category beholder 
+	/*Device functions*/
+	function set_dinfo(did:Integer, name:String, dcat:Integer):Integer do 
+		if(dparameter_check(did, dcat) == 1)do
+			i = get_did_e_pos()
+			set_id(did, i, did_array)
+			set_dname(did, name)
+			set_dcat(did, dcat)
+			i = 0
+			while(i < capacity)do
+				print("ID: ")print(did_array[i])print(" cat: ")print(dcat_array[i])print("\n")
+				i = i +1
+			end
+			i = 0
+			return 1
+		end
+		human_output!prompt("ALERT: Check parameters!")
+		return -1
+	end
+	
+	function dparameter_check(did:Integer, dcat:Integer):Integer do//check if parameters is valid
+		if(did_array[capacity-1] != 0) do return -1 end
+		if(did <= 0)do return -1 end
+		if(tid_u_check(did, did_array) == 1) do return -1 end
+		if(dcat <= 0 and dcat > 3) do return -1 end
+		return 1
+	end
+	
+	//function set_did(did:Integer, e_pos:Integer) do i = e_pos_d(did) 	did_array[i] = did	end	//Set device id into did_array
+	function set_dname(did:Integer, dname:String) do i = id_pos(did,did_array) i = id_pos(did, did_array)	dname_array[i] = dname i = 0 end 	//set name into dname_array
+	function set_dcat(did:Integer, dcat:Integer) do i = e_pos_d(did)  i = id_pos(did, did_array)	dcat_array[i] = dcat i = 0 end	//set dcat into dcat_array
+	
+	function e_pos_d(did:Integer):Integer do //return position of gien ID
+	i = 0
+		while( i < capacity) do 
+			if(tid_array[i] == did) return i
+			i = i + 1
+		end 
+		i = 0
+		return -1 
+	end
+	
+	function get_did_e_pos():Integer do //return first empty position in did_array
+		i = 0
+		while(i < capacity)do
+			if(did_array[i] == 0)do
+				return i
+			end
+			i = i + 1
+		end
+		i = 0
+		return -1
+	end
+	
+	/*function switch_id_1(did:Integer):Integer do //ASsign id which have cat 1 to variable switch_id
+		i = id_pos(did,did_array)
+		while(i < capacity)do
+			if(dcat_array[i] == 1)do
+				switch_id = did_array[i]
+				return 1
+			end
+			i = i + 1
+		end
+		i = 0
+		return -1
+	end*/
+			//TODO: Does not work, modify!
+	
+	function switch_allheat_off()do
+		i = 0
+		while(i < capacity)do
+			if(dcat_array[i] == 1)do
+				request_actuator!SwitchOff(did_array[i])
+			end
+			i = i + 1
+		end
+		i = 0
+	end
+	
+	function switch_allheat_on()do
+		i = 0
+		while(i < capacity)do
+			if(dcat_array[i] == 1)do
+				request_actuator!SwitchOn(did_array[i])
+			end
+			i = i + 1
+		end
+		i = 0
+	end
+	
+	/*Time Periods variabler*/
+	property tpname:String
+	property sh:Integer = 0
+	property sm:Integer = 0
+	property eh:Integer = 0
+	property em:Integer = 0
+	property comfort_t:Double
+	property c1:Integer
+	property c2:Integer
+	property c3:Integer
+	property time_min:Integer = 0 //00:00:00
+	property time_max:Integer = 86340 //00:23:59
+	/*Time Periods arrays*/
+	property tpname_array:String[capacity]
+	property tpname_help:String[capacity]
+	property stime_array:Integer[capacity]
+	property etime_array:Integer[capacity]
+	property ctemp_array:Double[capacity]
+	property c1_array:Integer[capacity]
+	property c2_array:Integer[capacity]
+	property c3_array:Integer[capacity]
+	/*Time Periods help variables*/
+	property help:Integer
+	property help2:Integer
+	property empty:Integer = 0
+	
+	function fix_null()do //Temp, fix NULL values in tpname_array
+		i = 0
+		while(i < capacity)do
+			tpname_array[i] = "0"
+			i = i+1
+		end
+	end
+	
+	function set_tpinfo(name:String, sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+		//if(tpparameter_check(name) == true)do
+			//i = tp_e_pos()
+			set_tpname(name,empty,tpname_array)
+			set_setime(name, sh, sm, eh, em)
+			return true
+		//end
+	//	human_output!prompt("ALERT! Time periods parameters invalid!")
+		//return false
+	end
+	
+	function tpparameter_check(name:String):Boolean do
+		if(check_name(name) == false) return false
+		return true
+	end
+	
+	function tp_e_pos():Integer do //Find empty position for tpname_array
+		i = 0
+		while(i < capacity)do
+			if(tpname_array[i] == tpname_help[0] ) return i
+			i = i + 1
+		end
+		i = 0
+		return -1
+	end
+	
+	function name_pos(name:String):Integer do
+		i = 0
+		while(i < capacity)do
+			if(tpname_array[i] == name ) return i
+			i = i + 1
+		end
+		i = 0
+		return 1
+	end
+	
+	function check_name(name:String):Boolean do //Checking name if dublicate returns fail
+		i = 0
+		while(i < capacity)do
+			if(tpname_array[i] == name)do  //If == return false
+				return false
+			end
+			i = i + 1
+		end
+		i = 0
+		return true
+	end	
+
+	function set_tpname(name:String, e_pos:Integer, id_array:String[capacity]) do //Set id into array tid_array
+		tpname_array[e_pos] = name
+		empty = empty + 1
+	end
+	
+ 	function set_setime(name:String, sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+ 		help = (sh*60 + sm)*60
+ 		help2 = (eh*60+em)*60
+ 		if(help > help2) return false
+ 		if(help == help2) return false
+ 		if(help < time_min /*or help > time_max*/) return false
+ 		if(help2 > time_max /*or help2 < time_min*/) return false 
+ 		i = name_pos(name)
+ 		stime_array[i] = help
+ 		etime_array[i] = help2
+ 		i = 0
+ 		help = 0
+ 		help2 = 0
+ 		return true
+ 	end
+ 	
+	statechart PIM_behavior init Build {
+		composite state Build init AddThermo keeps history {
+		on entry guard_human!timer_start(30000) // 30s to do the whole build 
+		on exit guard_human!timer_cancel()
+			state TimePeriod{
+				transition -> TimePeriod
+				event addper:human_input?add_period
+				action do
+					//set_name(addper.name)
+				end
+			}
+			state AddThermo {
+				transition -> AddThermo
+				event addt:human_input?add_thermometer
+				action do
+					fix_null()
+					thermo_id=addt.id
+					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
+					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)
+					set_setime(addt.txt, 2,20,4,20)
+								print("stime: ")print(stime_array[0])print(" ")print(etime_array[0])
+								i =0
+								while(i <capacity) do print(tpname_array[i]) print(" ") i = i+1 end
+					
+					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
+					ant_t = ant_t + 1
+				end
+				transition -> AddThermo // Cover other messages
+				//event human_input?add_device
+				event human_input?SwitchOn
+				event human_input?SwitchOff
+				event human_input?set_temperature
+				event human_input?set_polling_interval
+				action do
+					human_output!prompt("Please add thermometer")
+				end
+				// temperature is handled on Build level
+				
+				transition -> AddThermo
+				event human_input?add_device
+				guard ant_t == 0 
+				action do
+					human_output!prompt("Please add at least 1 thermometer first!")
+				end
+				
+				transition -> AddDevice
+				event adddev:human_input?add_device
+				guard ant_t > 0
+				action do 
+					set_dinfo(adddev.did, adddev.name, adddev.cat)
+					request_actuator!add_device(switch_id, adddev.name, adddev.cat)
+					ant_d = ant_d + 1
+					human_output!prompt("Please give thermostat temperature setting")
+				end
+			}
+			state AddDevice {
+				transition -> AddDevice
+				event adddev:human_input?add_device
+				guard ant_d <= 10
+				action do
+					id_pos(adddev.did,did_array)
+					set_dinfo(adddev.did, adddev.name, adddev.cat)				
+					request_actuator!add_device(switch_id,adddev.name, adddev.cat)
+					ant_d = ant_d + 1
+					human_output!prompt("Please give thermostat temperature setting") // SIMULATION: prompting on console for the user to react properly
+				end
+				transition -> AddDevice
+				event human_input?SwitchOn
+				event human_input?SwitchOff
+				event human_input?set_polling_interval
+				action do
+					human_output!prompt("Please add device")
+				end
+				transition -> AddDevice
+				event human_input?add_thermometer
+				action do
+					human_output!prompt("Thermometer already added, add device")
+				end
+				// temperature and set_temperature handled on Build level
+				
+			}
+			state SetThermostat {
+				// Here the only message we want is the set_temperature, but this is on one level up to move to Running
+				transition -> SetThermostat
+				event human_input?add_thermometer
+				event human_input?add_device
+				event human_input?SwitchOn
+				event human_input?SwitchOff
+				event human_input?set_polling_interval
+				action do
+					human_output!prompt("Please set temperature for Thermostat")
+				end			
+			}
+			
+			// Normal transition to the Running state
+			transition -> Running
+			event set_temp:human_input?set_temperature
+			action do
+				tmrature = set_temp.t
+				human_output!prompt("Now entering thermostat. Please give temperature observations") // SIMULATION: prompting on console for the user to react properly
+			end
+			
+			//Escape situations
+			transition -> Build
+			event get_sensor?temperature
+			action do 
+				// just discard, the thermostat is not running, yet (161103)
+			end
+				
+			transition -> Build
+			event tmout:guard_human?timer_timeout
+			action do
+				human_output!prompt("Please continue doing the build of the temperature control")
+			end
+			
+		} // end Build
+		composite state Running init Thermostat keeps history {
+		
+		
+			composite state Thermostat init TemprDecide {  // notice that we are not keeping history, we do not know whether to turn on or off
+				state TemprDecide {
+				on entry guard_temperature!timer_start(15000)  // hardcoded 15s to get the next temperature 
+				on exit guard_temperature!timer_cancel()
+					transition -> TemprDecrease
+					event temp2:get_sensor?temperature
+					guard guard_temp>=tmrature-1  // We choose switch OFF as much as we can here
+					action do
+						set_wtemp(temp2.id, temp2.t,tid_array)
+						guard_temp = calc_all_temp()
+						//TODO:Bug need to be fixed. When device with cat 1 are placed in the first position, actuator do not turn it off or on.
+						i = 0
+						//TODO:Try to modify while statment into function
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOff(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0					
+						//request_actuator!SwitchOff(switch_id)
+						lasttemp = guard_temp
+					end
+					
+					transition -> TemprIncrease
+					event temp2:get_sensor?temperature
+					guard guard_temp<tmrature-1
+					action do
+						set_wtemp(temp2.id, temp2.t,tid_array)
+						guard_temp = calc_all_temp()
+						i = 0
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOn(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0	
+						//request_actuator!SwitchOn(switch_id)
+						lasttemp = guard_temp
+						
+					end
+					
+					transition -> TemprDecide
+					event timout:guard_temperature?timer_timeout
+					action do
+						human_output!prompt("WARNING: @TemprDecide - temperature measurement is delayed")
+					end
+				}
+				
+				state TemprIncrease{ // Invariant: Switch is ON and temperature should increase
+				on entry guard_temperature!timer_start(15000)
+				on exit guard_temperature!timer_cancel()
+				
+					transition -> TemprIncrease 
+					event temp:get_sensor?temperature
+					guard guard_temp<=tmrature+1
+					action do
+						set_wtemp(temp.id, temp.t,tid_array)
+						guard_temp = calc_all_temp()
+						// TRACING to follow thermostat print("TempIncrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
+						if (lasttemp>guard_temp)do
+						i = 0
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOff(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0	
+						// request_actuator!SwitchOn(switch_id) // the temperature is still falling even though switch should be ON, reactivate
+						end
+						lasttemp = guard_temp
+						
+					end
+					
+					transition -> TemprDecrease
+					event temp2:get_sensor?temperature
+					guard guard_temp>tmrature+1 
+					action do
+						set_wtemp(temp2.id, temp2.t,tid_array)
+						guard_temp = calc_all_temp()
+						i = 0
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOff(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0	
+						//request_actuator!SwitchOff(switch_id)
+						lasttemp = guard_temp
+						
+					end
+					
+					transition -> TemprIncrease
+					event timout:guard_temperature?timer_timeout
+					action do
+						human_output!prompt("WARNING: @TemprIncrease - temperature measurement is delayed")						
+					end
+				}
+
+				state TemprDecrease{ // Invariant: Switch is OFF and temperature should decrease
+				on entry guard_temperature!timer_start(15000) 
+				on exit guard_temperature!timer_cancel()
+				
+					transition-> TemprDecrease
+					event temp:get_sensor?temperature
+					guard guard_temp>=tmrature-1
+					action do
+						set_wtemp(temp.id, temp.t,tid_array)
+						guard_temp = calc_all_temp()
+						// TRACING to follow thermostat print("TempDecrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
+						if (lasttemp<guard_temp) do
+						i = 0
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOff(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0	
+						//request_actuator!SwitchOff(switch_id) // the temperature is still rising even though switch should be OFF, reactivate
+						end
+						lasttemp = guard_temp
+						
+					end
+					
+					transition -> TemprIncrease
+					event temp2:get_sensor?temperature
+					guard guard_temp<tmrature-1
+					action do
+						set_wtemp(temp2.id, temp2.t,tid_array)
+						guard_temp = calc_all_temp()
+						i = 0
+						while(i < capacity)do
+							if(dcat_array[i] == 1)do
+								request_actuator!SwitchOff(did_array[i])
+							end
+							i = i + 1
+						end
+						i = 0	
+						//request_actuator!SwitchOn(switch_id)
+						lasttemp = guard_temp
+					end
+					
+					transition -> TemprDecrease
+					event timout:guard_temperature?timer_timeout
+					action do
+						human_output!prompt("WARNING: @TemprDecrease - temperature measurement is delayed")
+					end
+				}
+
+				
+				transition -> On
+				event swon:human_input?SwitchOn
+				action do
+					request_actuator!SwitchOn(swon.did)
+				end 
+				transition -> Off
+				event swoff:human_input?SwitchOff
+				action do
+					request_actuator!SwitchOff(swoff.did)
+				end 
+				transition -> Thermostat
+				event set_temp:human_input?set_temperature
+				action do
+					tmrature = set_temp.t
+				end
+			} // end Thermostat
+			
+			state On {
+				transition -> Off
+				event swoff:human_input?SwitchOff
+				action do
+					request_actuator!SwitchOff(swoff.did)
+				end 
+				transition -> On
+				event swon:human_input?SwitchOn
+				action do
+					request_actuator!SwitchOn(swon.did)
+				end
+				transition -> Thermostat
+				event set_temp:human_input?set_temperature
+				action do
+					tmrature = set_temp.t
+				end
+				transition -> On
+				event temp:get_sensor?temperature
+				action do
+					if (lasttemp>temp.t) request_actuator!SwitchOn(switch_id) // temperature is falling even when ON. Reactivate.
+					lasttemp = temp.t
+				end
+			}
+			state Off {
+				transition -> Off
+				event swoff:human_input?SwitchOff
+				action do
+					request_actuator!SwitchOff(swoff.did)
+				end 
+				transition -> On
+				event swon:human_input?SwitchOn
+				action do
+					request_actuator!SwitchOn(swon.did)
+				end
+				transition -> Thermostat
+				event set_temp:human_input?set_temperature
+				action do
+					tmrature = set_temp.t
+				end	
+				transition -> Off
+				event temp:get_sensor?temperature
+				action do
+					if (lasttemp<temp.t) request_actuator!SwitchOff(switch_id) // temperature is rising even when OFF. Reactivate.
+					lasttemp = temp.t
+				end
+			}
+			
+			// Transitions of the composite state Running
+			transition -> Running
+			event pollint:human_input?set_polling_interval
+			action do
+				// just forward the polling interval instructions to the PSM
+				request_sensor!set_polling_interval(pollint.intrvl)
+			end
+			
+			// Messages that should not occur
+			transition -> Running
+			event human_input?add_thermometer
+			event human_input?add_device
+			action do
+				human_output!prompt("Adding gadgets has been done and then blocked")
+			end			
+			// Messages the cannot occur - since they are always handled
+			transition -> Running
+			event human_input?SwitchOn
+			event human_input?SwitchOff
+			event human_input?set_temperature
+			action do
+				human_output!prompt("INTERNAL ERROR: Impossible messages at PIM.Running")
+			end		
+			transition -> Running
+			event temp:get_sensor?temperature
+			action do
+				human_output!prompt("INTERNAL ERROR: temperature received at PIM.Running")
+				lasttemp = temp.t
+			end
+		} // end Running
+	} // end PIM_behavior
+} // end PIM thing
+
