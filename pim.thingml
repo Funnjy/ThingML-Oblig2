@@ -273,7 +273,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property c2:Integer
 	property c3:Integer
 	property time_min:Integer = 0 //00:00:00
-	property time_max:Integer = 86340 //00:23:59
+	property time_max:Integer = 86399 //23:59:59
 	/*Time Periods arrays*/
 	property tpname_array:String[capacity]
 	property stime_array:Integer[capacity]
@@ -312,6 +312,49 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		end
 		return false
 	end
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	function calc_hm(h:Integer, m:Integer):Integer do 
+		
+		return (h*60+m)*60
+	end
+	
+	function set_stime(sh:Integer, sm:Integer):Boolean do
+		//if(check_period_s() == true)do
+			help = calc_hm(sh,sm)
+			stime_array[empty-1] = help
+			help = 0
+			return true
+		//end
+		//human_output!prompt("ALERT:Start time cannot be set due invalid value!")
+	end
+	
+/*	function check_period_s(h:Integer, m:Integer):Boolean do
+		help = calc_hm(h,m)
+		if(help >= time_min and help <= time_max) return true
+		return false
+	end*/
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	statechart PIM_behavior init Build {
 		composite state Build init AddThermo keeps history {
@@ -331,32 +374,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 					thermo_id=addt.id
 					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
 					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)
+		
 					print(empty)print("\n")
-					set_tpname("test1")
-					print(empty)print("\n")
-					set_tpname("test2")
-					print(empty)print("\n")
-					set_tpname("test3")
-					print(empty)print("\n")
-					set_tpname("test4")
-					print(empty)print("\n")
-					set_tpname("test5")
-					print(empty)print("\n")
-					set_tpname("test6")
-					print(empty)print("\n")
-					set_tpname("test7")
-					print(empty)print("\n")
-					set_tpname("test8")
-					print(empty)print("\n")
-					set_tpname("test9")
-					print(empty)print("\n")
-					set_tpname("test10")
-										print(empty)print("\n")
 					
 					set_tpname(addt.txt)
+					set_stime(13,25)
 					i = 0
 					while (i < capacity)do
-						print(tpname_array[i])print(" ")
+						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print("\n")
 						i = i + 1
 					end
 					
