@@ -267,10 +267,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	
 	/*Time Periods variabler*/
 	property tpname:String
-	property sh:Integer = 0
-	property sm:Integer = 0
-	property eh:Integer = 0
-	property em:Integer = 0
+	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
 	property comfort_t:Double
 	property c1:Integer
 	property c2:Integer
@@ -279,7 +276,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property time_max:Integer = 86340 //00:23:59
 	/*Time Periods arrays*/
 	property tpname_array:String[capacity]
-	property tpname_help:String[capacity]
 	property stime_array:Integer[capacity]
 	property etime_array:Integer[capacity]
 	property ctemp_array:Double[capacity]
@@ -289,85 +285,34 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	/*Time Periods help variables*/
 	property help:Integer
 	property help2:Integer
-	property empty:Integer = 0
-	
-	function fix_null()do //Temp, fix NULL values in tpname_array
+	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
+
+	function check_name(name:String):Boolean do
 		i = 0
-		while(i < capacity)do
-			tpname_array[i] = "0"
-			i = i+1
-		end
-	end
-	
-	function set_tpinfo(name:String, sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
-		//if(tpparameter_check(name) == true)do
-			//i = tp_e_pos()
-			set_tpname(name,empty,tpname_array)
-			set_setime(name, sh, sm, eh, em)
-			return true
-		//end
-	//	human_output!prompt("ALERT! Time periods parameters invalid!")
-		//return false
-	end
-	
-	function tpparameter_check(name:String):Boolean do
-		if(check_name(name) == false) return false
-		return true
-	end
-	
-	function tp_e_pos():Integer do //Find empty position for tpname_array
-		i = 0
-		while(i < capacity)do
-			if(tpname_array[i] == tpname_help[0] ) return i
-			i = i + 1
-		end
-		i = 0
-		return -1
-	end
-	
-	function name_pos(name:String):Integer do
-		i = 0
-		while(i < capacity)do
-			if(tpname_array[i] == name ) return i
-			i = i + 1
-		end
-		i = 0
-		return 1
-	end
-	
-	function check_name(name:String):Boolean do //Checking name if dublicate returns fail
-		i = 0
-		while(i < capacity)do
-			if(tpname_array[i] == name)do  //If == return false
+		while(i < empty) do 
+			if(tpname_array[i] == name) do
+				human_output!prompt("ALERT! Time period name must be uniq!")
 				return false
 			end
-			i = i + 1
+			i = i + 1 
 		end
 		i = 0
 		return true
-	end	
-
-	function set_tpname(name:String, e_pos:Integer, id_array:String[capacity]) do //Set id into array tid_array
-		tpname_array[e_pos] = name
-		empty = empty + 1
 	end
 	
- 	function set_setime(name:String, sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
- 		help = (sh*60 + sm)*60
- 		help2 = (eh*60+em)*60
- 		if(help > help2) return false
- 		if(help == help2) return false
- 		if(help < time_min /*or help > time_max*/) return false
- 		if(help2 > time_max /*or help2 < time_min*/) return false 
- 		i = name_pos(name)
- 		stime_array[i] = help
- 		etime_array[i] = help2
- 		i = 0
- 		help = 0
- 		help2 = 0
- 		return true
- 	end
- 	
+	function set_tpname(name:String):Boolean do
+		if(empty >= capacity)do 
+			human_output!prompt("ALERT! Maximum time periods reached!")
+			return false
+		end
+		if(check_name(name) == true)do
+			tpname_array[empty] = name
+			empty = empty + 1
+			return true
+		end
+		return false
+	end
+
 	statechart PIM_behavior init Build {
 		composite state Build init AddThermo keeps history {
 		on entry guard_human!timer_start(30000) // 30s to do the whole build 
@@ -383,14 +328,37 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 				transition -> AddThermo
 				event addt:human_input?add_thermometer
 				action do
-					fix_null()
 					thermo_id=addt.id
 					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
 					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)
-					set_setime(addt.txt, 2,20,4,20)
-								print("stime: ")print(stime_array[0])print(" ")print(etime_array[0])
-								i =0
-								while(i <capacity) do print(tpname_array[i]) print(" ") i = i+1 end
+					print(empty)print("\n")
+					set_tpname("test1")
+					print(empty)print("\n")
+					set_tpname("test2")
+					print(empty)print("\n")
+					set_tpname("test3")
+					print(empty)print("\n")
+					set_tpname("test4")
+					print(empty)print("\n")
+					set_tpname("test5")
+					print(empty)print("\n")
+					set_tpname("test6")
+					print(empty)print("\n")
+					set_tpname("test7")
+					print(empty)print("\n")
+					set_tpname("test8")
+					print(empty)print("\n")
+					set_tpname("test9")
+					print(empty)print("\n")
+					set_tpname("test10")
+										print(empty)print("\n")
+					
+					set_tpname(addt.txt)
+					i = 0
+					while (i < capacity)do
+						print(tpname_array[i])print(" ")
+						i = i + 1
+					end
 					
 					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
 					ant_t = ant_t + 1
