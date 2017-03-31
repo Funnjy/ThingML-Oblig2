@@ -30,7 +30,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		sends add_device, SwitchOn, SwitchOff, add_period
 	}
 	provided port human_input {
-		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, set_polling_interval, add_period
+		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, add_period, set_polling_interval
 	}
 	required port human_output {
 		sends temperature, prompt
@@ -286,6 +286,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property help:Integer
 	property help2:Integer
 	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
+	property a_periods:Integer = 0
 //Name methods START
 	function check_name(name:String):Boolean do
 		i = 0
@@ -410,13 +411,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		composite state Build init AddThermo keeps history {
 		on entry guard_human!timer_start(30000) // 30s to do the whole build 
 		on exit guard_human!timer_cancel()
-			state TimePeriod{
-				transition -> TimePeriod
-				event addper:human_input?add_period
-				action do
-					//set_name(addper.name)
-				end
-			}
+			
 			state AddThermo {
 				transition -> AddThermo
 				event addt:human_input?add_thermometer
@@ -499,6 +494,32 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 				end
 				// temperature and set_temperature handled on Build level
 				
+			}
+			state TimePeriod{
+				transition -> TimePeriod
+				event addtp:human_input?add_period
+				guard a_periods < 10
+				action do
+					/*add period*/
+				end
+				
+				transition -> AddThermo
+				event human_input?SwitchOn
+				event human_input?SwitchOff
+				event human_input?set_polling_interval
+				event human_input?set_temperature
+				guard a_periods == 0 
+				action do
+					human_output!prompt("Please add at least 1 period first!")
+				end
+				
+				transition -> TimePeriod
+				event human_input?SwitchOn
+				event human_input?SwitchOff
+				event human_input?set_polling_interval
+				action do
+					/*add default period*/
+				end
 			}
 			state SetThermostat {
 				// Here the only message we want is the set_temperature, but this is on one level up to move to Running
