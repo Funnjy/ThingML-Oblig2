@@ -273,7 +273,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property c2:Integer
 	property c3:Integer
 	property time_min:Integer = 0 //00:00:00
-	property time_max:Integer = 86399 //23:59:59
+	property time_max:Integer = 1439 //23:59:59
 	/*Time Periods arrays*/
 	property tpname_array:String[capacity]
 	property stime_array:Integer[capacity]
@@ -284,7 +284,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property c3_array:Integer[capacity]
 	/*Time Periods help variables*/
 	property help:Integer
-	property help2:Integer
+	property help2:LongLong
 	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
 
 	function check_name(name:String):Boolean do
@@ -323,25 +323,46 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	
 	
 	function calc_hm(h:Integer, m:Integer):Integer do 
-		
-		return (h*60+m)*60
+		return h*60+m
+	end
+	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+	
 	end
 	
 	function set_stime(sh:Integer, sm:Integer):Boolean do
-		//if(check_period_s() == true)do
-			help = calc_hm(sh,sm)
+		help = calc_hm(sh,sm)
+		if(check_period_s(help) == true)do
 			stime_array[empty-1] = help
+			time_min = help
 			help = 0
 			return true
-		//end
-		//human_output!prompt("ALERT:Start time cannot be set due invalid value!")
+		end
+		human_output!prompt("ALERT:Start time cannot be set due invalid value!")
+		help = 0
+		return false
 	end
 	
-/*	function check_period_s(h:Integer, m:Integer):Boolean do
-		help = calc_hm(h,m)
-		if(help >= time_min and help <= time_max) return true
+	function set_etime(eh:Integer, em:Integer):Boolean do 
+		help = calc_hm(eh,em)
+		if(check_period_e(help) == true)do
+			etime_array[empty-1] = help
+			help = 0
+			return true
+		end
+		human_output!prompt("ALERT:END time cannot be set due invalid value!")
+		help = 0
 		return false
-	end*/
+	end
+	
+	function check_period_s(sp:Integer):Boolean do
+		if(sp >= time_min and sp <= time_max) return true
+		return false
+	end
+	
+	function check_period_e(ep:Integer):Boolean do
+		if(ep > time_min and ep <= time_max) return true
+		return false
+	end
 
 
 
@@ -378,12 +399,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 					print(empty)print("\n")
 					
 					set_tpname(addt.txt)
-					set_stime(13,25)
+					set_stime(0,59)
+					set_etime(1,59)
 					i = 0
 					while (i < capacity)do
-						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print("\n")
+						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])print("\n")
 						i = i + 1
 					end
+					
 					
 					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
 					ant_t = ant_t + 1
