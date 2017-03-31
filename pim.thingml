@@ -319,7 +319,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
 		help = calc_hm(sh,sm)
 		help2 = calc_hm(eh,em)
-		if(check_period_s(help, help2) == true and check_period_e(help, help2) == true)do 
+		if(check_period_s(sh, sm, eh, em) == true and check_period_e(sh, sm, eh, em) == true)do 
 			stime_array[empty-1] = help
 			etime_array[empty-1] = help2
 			time_min = help
@@ -333,13 +333,17 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		return false
 	end
 	
-	function check_period_s(sp:Integer, ep:Integer):Boolean do
-		if(sp >= time_min and sp <= time_max and sp < ep) return true
+	function check_period_s(sh:Integer, sm:Integer,eh:Integer, em:Integer):Boolean do
+		help = calc_hm(sh,sm)
+		help2 = calc_hm(eh,em)	
+		if(help >= time_min and help <= time_max and help < help2) return true
 		return false
 	end
 	
-	function check_period_e(sp:Integer, ep:Integer):Boolean do
-		if(ep > sp and ep <= time_max) return true
+	function check_period_e(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+		help = calc_hm(sh,sm)
+		help2 = calc_hm(eh,em)	
+		if(help2 > help and help2 <= time_max) return true
 		return false
 	end
 //Time methods END
@@ -351,34 +355,53 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		if(i >= 0 and i <=2)do
 			c1_array[empty-1] = i
 		end
-		human_output!prompt("ALERT! Category 1 must be number between 0 and 2: 0-OFF, 1- ON, 2- Thermostat")
-		return false
+		return true
 	end
 	function set_category2(i:Integer):Boolean do
-		if(i >= 0 and i <= 1)do
 			if(i == 0)do c2_array[empty-1] = false end
 			if(i == 1)do c2_array[empty-1] = true end
-		end
-		human_output!prompt("ALERT! Category 2 must be number between 0 and 1: 0-OFF, 1- ON")
-		return false
+		return true
 	end
 	
 	function set_category3(i:Integer):Boolean do
-		if(i >= 0 and i <= 1)do
 			if(i == 0)do c3_array[empty-1] = false end
 			if(i == 1)do c3_array[empty-1] = true end
-		end
-		human_output!prompt("ALERT! Category 2 must be number between 0 and 1: 0-OFF, 1- ON")
+		return true
+	end
+	function check_cat1(i:Integer):Boolean do
+		if(i >= 0 and i <=2)do return true end
+		human_output!prompt("ALERT! Category 1 must be number between 0 and 2: 0-OFF, 1- ON, 2- Thermostat")
+		return false		
+	end
+	function check_cat1_2(i:Integer, i2:Integer):Boolean do
+		if(i >= 0 and i <= 1 and i2 >= 0 and i2 <= 1)do return true end
+		
+		human_output!prompt("ALERT! Category 2 and 3 must be number between 0 and 1: 0-OFF, 1- ON")
 		return false
 	end
 //Category ON/OFF END
-
-
-
-
-
-
-
+	function tp_parameter_check(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, c_t:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
+		if(check_name(name) == false) do return false end
+		if(empty >= capacity) do return false end
+		if(check_period_s(sh,sm,eh,em) == false or check_period_e(sh,sm,eh,em) == false) return false
+		if(check_cat1(c1) == false) return false
+		if(check_cat1_2(c2,c3) == false) return false
+		return true
+	end
+	
+	
+	function set_tp(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, c_t:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
+		if(tp_parameter_check(name,sh,sm,eh,em,c_t,c1,c2,c3) == true) do
+			set_tpname(name)
+		 	set_time(sh, sm, eh, em)
+		 	set_category1(c1)
+		 	set_category2(c2)
+		 	set_category3(c3)
+		 	return true
+		end
+		human_output!prompt("ALERT! One or more parameters is INVALID, adding blocked")
+		return false
+	end
 
 
 
@@ -404,14 +427,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		
 					print(empty)print("\n")
 					
-					set_tpname(addt.txt)
-					//set_stime(0,59)
+					//set_tpname(addt.txt)
+					/*//set_stime(0,59)
 					//set_etime(1,59)
 					set_time(0,59,1,23)
-					set_category1(4)
+					set_category1(1)
 					set_category2(-1)
-					set_category3(1)
-					
+					set_category3(1)*/
+					set_tp(addt.txt,0, 59, 1, 59, 1, 1, 1, 1)
 					i = 0
 					while (i < capacity)do
 						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])print("\n")
