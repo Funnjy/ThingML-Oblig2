@@ -284,7 +284,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property c3_array:Integer[capacity]
 	/*Time Periods help variables*/
 	property help:Integer
-	property help2:LongLong
+	property help2:Integer
 	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
 
 	function check_name(name:String):Boolean do
@@ -326,41 +326,29 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		return h*60+m
 	end
 	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
-	
-	end
-	
-	function set_stime(sh:Integer, sm:Integer):Boolean do
 		help = calc_hm(sh,sm)
-		if(check_period_s(help) == true)do
+		help2 = calc_hm(eh,em)
+		if(check_period_s(help, help2) == true and check_period_e(help, help2) == true)do 
 			stime_array[empty-1] = help
+			etime_array[empty-1] = help2
 			time_min = help
 			help = 0
+			help2 = 0
 			return true
 		end
-		human_output!prompt("ALERT:Start time cannot be set due invalid value!")
+		human_output!prompt("ALERT:Start time or End time values is incorrect and cannot be set!")
 		help = 0
+		help2 = 0
 		return false
 	end
 	
-	function set_etime(eh:Integer, em:Integer):Boolean do 
-		help = calc_hm(eh,em)
-		if(check_period_e(help) == true)do
-			etime_array[empty-1] = help
-			help = 0
-			return true
-		end
-		human_output!prompt("ALERT:END time cannot be set due invalid value!")
-		help = 0
+	function check_period_s(sp:Integer, ep:Integer):Boolean do
+		if(sp >= time_min and sp <= time_max and sp < ep) return true
 		return false
 	end
 	
-	function check_period_s(sp:Integer):Boolean do
-		if(sp >= time_min and sp <= time_max) return true
-		return false
-	end
-	
-	function check_period_e(ep:Integer):Boolean do
-		if(ep > time_min and ep <= time_max) return true
+	function check_period_e(sp:Integer, ep:Integer):Boolean do
+		if(ep > sp and ep <= time_max) return true
 		return false
 	end
 
@@ -399,8 +387,11 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 					print(empty)print("\n")
 					
 					set_tpname(addt.txt)
-					set_stime(0,59)
-					set_etime(1,59)
+					//set_stime(0,59)
+					//set_etime(1,59)
+					set_time(0,59,1,23)
+					
+					
 					i = 0
 					while (i < capacity)do
 						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])print("\n")
