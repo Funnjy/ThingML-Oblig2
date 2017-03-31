@@ -270,8 +270,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
 	property comfort_t:Double
 	property c1:Integer
-	property c2:Integer
-	property c3:Integer
+	property c2:Boolean
+	property c3:Boolean
 	property time_min:Integer = 0 //00:00:00
 	property time_max:Integer = 1439 //23:59:59
 	/*Time Periods arrays*/
@@ -280,13 +280,13 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property etime_array:Integer[capacity]
 	property ctemp_array:Double[capacity]
 	property c1_array:Integer[capacity]
-	property c2_array:Integer[capacity]
-	property c3_array:Integer[capacity]
+	property c2_array:Boolean[capacity]
+	property c3_array:Boolean[capacity]
 	/*Time Periods help variables*/
 	property help:Integer
 	property help2:Integer
 	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
-
+//Name methods START
 	function check_name(name:String):Boolean do
 		i = 0
 		while(i < empty) do 
@@ -299,7 +299,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		i = 0
 		return true
 	end
-	
 	function set_tpname(name:String):Boolean do
 		if(empty >= capacity)do 
 			human_output!prompt("ALERT! Maximum time periods reached!")
@@ -312,16 +311,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		end
 		return false
 	end
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+//Name methods END
+//Time methods SART
 	function calc_hm(h:Integer, m:Integer):Integer do 
 		return h*60+m
 	end
@@ -351,9 +342,36 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		if(ep > sp and ep <= time_max) return true
 		return false
 	end
-
-
-
+//Time methods END
+//Comfort temperature START
+	
+//Comfort temperature END
+//Category ON/OFF START
+	function set_category1(i:Integer):Boolean do
+		if(i >= 0 and i <=2)do
+			c1_array[empty-1] = i
+		end
+		human_output!prompt("ALERT! Category 1 must be number between 0 and 2: 0-OFF, 1- ON, 2- Thermostat")
+		return false
+	end
+	function set_category2(i:Integer):Boolean do
+		if(i >= 0 and i <= 1)do
+			if(i == 0)do c2_array[empty-1] = false end
+			if(i == 1)do c2_array[empty-1] = true end
+		end
+		human_output!prompt("ALERT! Category 2 must be number between 0 and 1: 0-OFF, 1- ON")
+		return false
+	end
+	
+	function set_category3(i:Integer):Boolean do
+		if(i >= 0 and i <= 1)do
+			if(i == 0)do c3_array[empty-1] = false end
+			if(i == 1)do c3_array[empty-1] = true end
+		end
+		human_output!prompt("ALERT! Category 2 must be number between 0 and 1: 0-OFF, 1- ON")
+		return false
+	end
+//Category ON/OFF END
 
 
 
@@ -390,11 +408,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 					//set_stime(0,59)
 					//set_etime(1,59)
 					set_time(0,59,1,23)
-					
+					set_category1(4)
+					set_category2(-1)
+					set_category3(1)
 					
 					i = 0
 					while (i < capacity)do
 						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])print("\n")
+						print(" Category1:")print(c1_array[i])print(" category2:")print(c2_array[i])print(" category3:")print(c3_array[i])print("\n")
 						i = i + 1
 					end
 					
