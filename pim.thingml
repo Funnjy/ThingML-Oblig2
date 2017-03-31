@@ -418,26 +418,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 				action do
 					thermo_id=addt.id
 					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
-					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)
-		
-					print(empty)print("\n")
-					
-					set_tpname(addt.txt)
-					/*//set_stime(0,59)
-					//set_etime(1,59)
-					set_time(0,59,1,23)
-					set_category1(1)
-					set_category2(-1)
-					set_category3(1)*/
-					set_tp(addt.txt,0, 59, 1, 59, 1, 1, 1, 1)
-					i = 0
-					while (i < capacity)do
-						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])print("\n")
-						print(" Category1:")print(c1_array[i])print(" category2:")print(c2_array[i])print(" category3:")print(c3_array[i])print("\n")
-						i = i + 1
-					end
-					
-					
+					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)				
 					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
 					ant_t = ant_t + 1
 				end
@@ -493,6 +474,18 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 					human_output!prompt("Thermometer already added, add device")
 				end
 				// temperature and set_temperature handled on Build level
+				transition -> TimePeriod
+				event addtp:human_input?add_period
+				guard a_periods < 10
+				action do
+					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, 1, addtp.cat1, addtp.cat2, addtp.cat3)
+					i = 0
+					while (i < capacity)do
+						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])
+						print(" Category1:")print(c1_array[i])print(" category2:")print(c2_array[i])print(" category3:")print(c3_array[i])print("\n")
+						i = i + 1
+					end
+				end
 				
 			}
 			state TimePeriod{
@@ -500,25 +493,13 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 				event addtp:human_input?add_period
 				guard a_periods < 10
 				action do
-					/*add period*/
-				end
-				
-				transition -> AddThermo
-				event human_input?SwitchOn
-				event human_input?SwitchOff
-				event human_input?set_polling_interval
-				event human_input?set_temperature
-				guard a_periods == 0 
-				action do
-					human_output!prompt("Please add at least 1 period first!")
-				end
-				
-				transition -> TimePeriod
-				event human_input?SwitchOn
-				event human_input?SwitchOff
-				event human_input?set_polling_interval
-				action do
-					/*add default period*/
+					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, 1, addtp.cat1, addtp.cat2, addtp.cat3)
+					i = 0
+					while (i < capacity)do
+						print("Name: ")print(tpname_array[i])print(" StartTime:")print(stime_array[i])print(" End time:")print(etime_array[i])
+						print(" Category1:")print(c1_array[i])print(" category2:")print(c2_array[i])print(" category3:")print(c3_array[i])print("\n")
+						i = i + 1
+					end
 				end
 			}
 			state SetThermostat {
