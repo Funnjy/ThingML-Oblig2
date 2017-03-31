@@ -300,16 +300,16 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		return true
 	end
 	function set_tpname(name:String):Boolean do
-		if(empty >= capacity)do 
+		/*if(empty >= capacity)do 
 			human_output!prompt("ALERT! Maximum time periods reached!")
 			return false
 		end
-		if(check_name(name) == true)do
+		if(check_name(name) == true)do*/
 			tpname_array[empty] = name
 			empty = empty + 1
 			return true
-		end
-		return false
+		//end
+		//return false
 	end
 //Name methods END
 //Time methods SART
@@ -319,18 +319,18 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
 		help = calc_hm(sh,sm)
 		help2 = calc_hm(eh,em)
-		if(check_period_s(sh, sm, eh, em) == true and check_period_e(sh, sm, eh, em) == true)do 
+		//if(check_period_s(sh, sm, eh, em) == true and check_period_e(sh, sm, eh, em) == true)do 
 			stime_array[empty-1] = help
 			etime_array[empty-1] = help2
 			time_min = help
 			help = 0
 			help2 = 0
 			return true
-		end
-		human_output!prompt("ALERT:Start time or End time values is incorrect and cannot be set!")
-		help = 0
-		help2 = 0
-		return false
+		/*end
+		human_output!prompt("ALERT:Start time or End time values is incorrect and cannot be set!")*/
+		//help = 0
+		//help2 = 0
+		//return false
 	end
 	
 	function check_period_s(sh:Integer, sm:Integer,eh:Integer, em:Integer):Boolean do
@@ -352,9 +352,9 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 //Comfort temperature END
 //Category ON/OFF START
 	function set_category1(i:Integer):Boolean do
-		if(i >= 0 and i <=2)do
+		//if(i >= 0 and i <=2)do
 			c1_array[empty-1] = i
-		end
+		//end
 		return true
 	end
 	function set_category2(i:Integer):Boolean do
@@ -427,7 +427,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		
 					print(empty)print("\n")
 					
-					//set_tpname(addt.txt)
+					set_tpname(addt.txt)
 					/*//set_stime(0,59)
 					//set_etime(1,59)
 					set_time(0,59,1,23)
