@@ -9,6 +9,7 @@ configuration CPS {
 	instance onoff1:OnOffSet
 	instance pim:PIM
 	instance myself:Human
+	instance time:Time
 	instance g_temp:TimerJava
 	instance g_humn:TimerJava
 	instance timer : TimerJava
@@ -31,6 +32,7 @@ configuration CPS {
 	connector onoff1.show_val => onoffobs.show_onoff
 	
 	// HMI
+	connector time.send_values => pim.human_input
 	connector myself.send_cmd => pim.human_input
 	
 	// PIM outwards 

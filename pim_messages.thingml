@@ -19,7 +19,8 @@ thing fragment TemperatureMsg {
     message add_thermometer(id:Integer,txt:String, w:Double);
     message set_temperature(t:Double);
    	message add_period(name:String, sh:Integer, sm:Integer, eh:Integer, em:Integer, comfort_t:Double, cat1:Integer, cat2:Integer, cat3:Integer)
-    
+   	message set_time(current_h:Integer, current_m:Integer)
+   	message get_time(current_h:Integer, current_m:Integer)
 }
 
 // Devices actuators in general

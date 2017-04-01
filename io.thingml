@@ -14,3 +14,11 @@ thing Human includes TemperatureMsg, GeneralMsg, OnOffMsg
 		receives temperature, prompt
 	}
 }
+
+thing Time includes TemperatureMsg, GeneralMsg, OnOffMsg
+@mock "true"
+{
+	required port send_values{
+		sends set_time
+	}
+}

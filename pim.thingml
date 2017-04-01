@@ -30,10 +30,13 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		sends add_device, SwitchOn, SwitchOff, add_period
 	}
 	provided port human_input {
-		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, add_period, set_polling_interval
+		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, add_period, set_polling_interval,set_time
 	}
 	required port human_output {
 		sends temperature, prompt
+	}
+	required port time_input{
+		receives set_time
 	}
 	
 	//timer ports - it does not hold to include TimerClient since it only has one port and therefore cannot distinguish between two timers
@@ -413,6 +416,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		on exit guard_human!timer_cancel()
 			
 			state AddThermo {
+			/*temp*/
+			transition -> AddThermo
+			event addtime:human_input?set_time
+			action do
+				print(addtime.current_h)print("\n")
+				print(addtime.current_m)print("\n")
+			end
+			
 				transition -> AddThermo
 				event addt:human_input?add_thermometer
 				action do
