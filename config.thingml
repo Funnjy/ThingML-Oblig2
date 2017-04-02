@@ -13,6 +13,7 @@ configuration CPS {
 	instance g_temp:TimerJava
 	instance g_humn:TimerJava
 	instance timer : TimerJava
+	instance clock: ClockStuff
 	//instance tp:TimePeriods
 	
 	// SIMULATION

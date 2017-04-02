@@ -15,7 +15,7 @@ thing Human includes TemperatureMsg, GeneralMsg, OnOffMsg
 	}
 }
 
-thing Time includes TemperatureMsg, GeneralMsg, OnOffMsg
+thing Time includes TemperatureMsg, GeneralMsg, OnOffMsg,ClockStuff
 @mock "true"
 {
 	required port send_values{

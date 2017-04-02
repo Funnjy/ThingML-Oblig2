@@ -12,14 +12,24 @@ import "psm_sim.thingml"
 import "psm_datatypes_sim.thingml"
 import "pim_messages.thingml"
 import "timer.thingml"
-/*thing TimePeriods includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, TimePeriods{
-	provided port human_input{
-		receives add_period
-	}
-	function set_tpinfo()do end
-}*/
 
-thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
+thing fragment ClockStuff{
+	property current_time:LongLong = 0
+	function updateNow()do
+		
+	end
+	
+	function setTime(h:Integer, m:Integer):Integer do
+		//current_time = calc_hm(h,m)
+		return current_time
+	end
+	
+	function getTime()do
+	
+	end
+}
+
+thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 	provided port get_sensor {
 		receives temperature
 	}
@@ -51,12 +61,17 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		receives timer_timeout
 		sends timer_start, timer_cancel
 	}
+	required port guard_time_periods{
+		receives timer_timeout
+		sends timer_start, timer_cancel
+	}
     
 	property tmrature:Double = 20 // the requested temperature for the room
 	property thermo_id:Integer // the single thermometer identifier
 	property thermo_w:Double //The single thermometer weight
 	property thermo_n:String //The single thermometer name
 	property switch_id:Integer // the single on-off switch identifier
+	//property current_time:Integer //in minuts
 	
 	property lasttemp:Double = 0 // the last temperature recorded, buffering one measurement
 	
@@ -254,7 +269,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 			end
 			i = i + 1
 		end
-		i = 0
+		i = 0	
 	end
 	
 	function switch_allheat_on()do
@@ -290,6 +305,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 	property help2:Integer
 	property empty:Integer = 0 //indicatior of first empty position in tpname_array[]
 	property a_periods:Integer = 0
+	property current_period:Integer = 0 //Behold position to actual time period
 //Name methods START
 	function check_name(name:String):Boolean do
 		i = 0
@@ -392,8 +408,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		if(check_cat1_2(c2,c3) == false) return false
 		return true
 	end
-	
-	
+
 	function set_tp(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, c_t:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
 		if(tp_parameter_check(name,sh,sm,eh,em,c_t,c1,c2,c3) == true) do
 			set_tpname(name)
@@ -406,9 +421,15 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		human_output!prompt("ALERT! One or more parameters is INVALID, adding blocked")
 		return false
 	end
-
-
-
+	
+	function current_period(curr_time:Integer):Integer do
+		//<Check i some periods exist>
+		//<If periods exist gå into while loop>
+		//<In while loop compare current_time and tp_start and tp_end>
+		//<If condition is true, return curren time period's pisition into current_period variable>
+		//<else go to the next period until we finde period>
+		return -1
+	end
 
 	statechart PIM_behavior init Build {
 		composite state Build init AddThermo keeps history {
@@ -422,6 +443,9 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 			action do
 				print(addtime.current_h)print("\n")
 				print(addtime.current_m)print("\n")
+				setTime(1,1)
+				//print(current_time)
+
 			end
 			
 				transition -> AddThermo
@@ -550,7 +574,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 		} // end Build
 		composite state Running init Thermostat keeps history {
 		
-		
 			composite state Thermostat init TemprDecide {  // notice that we are not keeping history, we do not know whether to turn on or off
 				state TemprDecide {
 				on entry guard_temperature!timer_start(15000)  // hardcoded 15s to get the next temperature 
@@ -562,8 +585,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
 						//TODO:Bug need to be fixed. When device with cat 1 are placed in the first position, actuator do not turn it off or on.
-						i = 0
 						//TODO:Try to modify while statment into function
+						i = 0						
 						while(i < capacity)do
 							if(dcat_array[i] == 1)do
 								request_actuator!SwitchOff(did_array[i])
@@ -692,7 +715,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs {
 							end
 							i = i + 1
 						end
-						i = 0	
+						i = 0
 						//request_actuator!SwitchOn(switch_id)
 						lasttemp = guard_temp
 					end
