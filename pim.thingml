@@ -564,18 +564,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						guard_temp = calc_all_temp()
 						//TODO:Bug need to be fixed. When device with cat 1 are placed in the first position, actuator do not turn it off or on.
 						//TODO:Try to modify while statement into function
-						i = 0						
-						while(i < capacity)do
-						print("\n i: ")
-						print(i)
-							if(dcat_array[i] == 1)do
-								print("\nslår av :")
-								print(did_array[i])
-								request_actuator!SwitchOff(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0					
+					 	switch_allheat_off()
+		
 						//request_actuator!SwitchOff(switch_id)
 						lasttemp = guard_temp
 					end
@@ -586,14 +576,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()						
-						i = 0
-						while(i < capacity)do
-							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOn(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0	
+						switch_allheat_on()	
 						//request_actuator!SwitchOn(switch_id)
 						lasttemp = guard_temp
 						
@@ -618,14 +601,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						guard_temp = calc_all_temp()
 						// TRACING to follow thermostat print("TempIncrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
 						if (lasttemp>guard_temp)do
-						i = 0
-						while(i < capacity)do
-							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOn(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0	
+						switch_allheat_on()
 						// request_actuator!SwitchOn(switch_id) // the temperature is still falling even though switch should be ON, reactivate
 						end
 						lasttemp = guard_temp
@@ -637,14 +613,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
-						i = 0
-						while(i < capacity)do
-							if(dcat_array[i] == 1)do							
-								request_actuator!SwitchOff(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0	
+						switch_allheat_off()
 						//request_actuator!SwitchOff(switch_id)
 						lasttemp = guard_temp
 						
@@ -669,14 +638,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						guard_temp = calc_all_temp()
 						// TRACING to follow thermostat print("TempDecrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
 						if (lasttemp<guard_temp) do
-						i = 0
-						while(i < capacity)do
-							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOff(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0	
+						switch_allheat_off()	
 						//request_actuator!SwitchOff(switch_id) // the temperature is still rising even though switch should be OFF, reactivate
 						end
 						lasttemp = guard_temp
@@ -689,14 +651,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
-						i = 0
-						while(i < capacity)do
-							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOn(did_array[i])
-							end
-							i = i + 1
-						end
-						i = 0
+						switch_allheat_on()
 						//request_actuator!SwitchOn(switch_id)
 						lasttemp = guard_temp
 					end
