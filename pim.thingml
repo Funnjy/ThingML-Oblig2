@@ -15,18 +15,14 @@ import "timer.thingml"
 
 thing fragment ClockStuff{
 	property current_time:LongLong = 0
-	function updateNow()do
-		
-	end
+	function updateNow()do	end
 	
 	function setTime(h:Integer, m:Integer):Integer do
 		//current_time = calc_hm(h,m)
 		return current_time
 	end
 	
-	function getTime()do
-	
-	end
+	function getTime()do	end
 }
 
 thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
@@ -71,7 +67,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 	property thermo_w:Double //The single thermometer weight
 	property thermo_n:String //The single thermometer name
 	property switch_id:Integer // the single on-off switch identifier
-	//property current_time:Integer //in minuts
+	property current_time:Integer //in minuts
 	
 	property lasttemp:Double = 0 // the last temperature recorded, buffering one measurement
 	
@@ -96,7 +92,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 		if(tid <= 0)do
 			human_output!prompt("Thermo ID can't be zero or negative number")
 			return 1
-		end		return -1
+		end		
+		return -1
 	end
 	function set_tinfo(tid:Integer, tname:String, twight:Double, ttemp:Double, id_array:Integer[capacity]):Boolean do 	//Funksjonen tarr inn alle verdiene å setter dem inn i arrays. 
 		if(tparameter_check(tid,twight,ttemp) == 1) do
@@ -104,7 +101,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 			set_id(tid, i, id_array)
 			set_name(tid, tname, tname_array, id_array)
 			set_weight(tid, twight, id_array)
-
 			return true
 		end
 		human_output!prompt("ALERT: Check parameters!")
@@ -144,7 +140,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
  	
 	function set_weight(tid:Integer, wight:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		twight_array[i] = wight i = 0	end 	//*Set wight that are equale to ID
 	function set_wtemp(tid:Integer, temp:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		ttemp_array[i] = temp * twight_array[i]	i = 0 end 	//Set calculated(temp*weight) 
-	//function set_dcat(did:Integer, dcat:Integer, id_array:Integer[]) do i = id_pos(did, id_array) 		dcat_array[i] = dcat i = 0 end	//set device category into dcat_array
 	function calc_temp(tid:Integer, temp:Double, w:Double):Double do //calculates temperatured with weights
 		i = id_pos(tid, tid_array)
 		temptemp = ttemp_array[i]*twight_array[i]
@@ -185,11 +180,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 		return -1
 	end	
 	
-	//*Function: Set thermo id in empty position
-	//function set_tid(tid:Integer, e_pos:Integer) do	i = get_tid_e_pos() 		tid_array[i] = tid	end
-	//*Set name verdi på plass som tilsvarer id*/
-	//function set_name(tid:Integer, name:String) do 	i = id_pos(tid)		tname_array[i] = name	end
-	
 	/*Device variabls*/
 	property did_array:Integer[capacity] //Id beholder
 	property dname_array:String[capacity] //Name Beholder
@@ -221,10 +211,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 		return 1
 	end
 	
-	//function set_did(did:Integer, e_pos:Integer) do i = e_pos_d(did) 	did_array[i] = did	end	//Set device id into did_array
 	function set_dname(did:Integer, dname:String) do i = id_pos(did,did_array) i = id_pos(did, did_array)	dname_array[i] = dname i = 0 end 	//set name into dname_array
 	function set_dcat(did:Integer, dcat:Integer) do i = e_pos_d(did)  i = id_pos(did, did_array)	dcat_array[i] = dcat i = 0 end	//set dcat into dcat_array
-	
 	function e_pos_d(did:Integer):Integer do //return position of gien ID
 	i = 0
 		while( i < capacity) do 
@@ -246,21 +234,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 		i = 0
 		return -1
 	end
-	
-	/*function switch_id_1(did:Integer):Integer do //ASsign id which have cat 1 to variable switch_id
-		i = id_pos(did,did_array)
-		while(i < capacity)do
-			if(dcat_array[i] == 1)do
-				switch_id = did_array[i]
-				return 1
-			end
-			i = i + 1
-		end
-		i = 0
-		return -1
-	end*/
-			//TODO: Does not work, modify!
-	
+			//TODO: Does not work, modify!	
 	function switch_allheat_off()do
 		i = 0
 		while(i < capacity)do
@@ -287,9 +261,9 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 	property tpname:String
 	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
 	property comfort_t:Double
-	property c1:Integer
+	/*property c1:Integer
 	property c2:Boolean
-	property c3:Boolean
+	property c3:Boolean*/
 	property time_min:Integer = 0 //00:00:00
 	property time_max:Integer = 1439 //23:59:59
 	/*Time Periods arrays*/
@@ -437,23 +411,24 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 		on exit guard_human!timer_cancel()
 			
 			state AddThermo {
-			/*temp*/
+			/*temp
 			transition -> AddThermo
 			event addtime:human_input?set_time
 			action do
 				print(addtime.current_h)print("\n")
 				print(addtime.current_m)print("\n")
-				setTime(1,1)
+				current_time = calc_hm(addtime.current_h, addtime.current_m)
+				print(current_time)
 				//print(current_time)
 
-			end
+			end*/
 			
 				transition -> AddThermo
 				event addt:human_input?add_thermometer
 				action do
 					thermo_id=addt.id
 					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
-					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)				
+					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)		
 					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
 					ant_t = ant_t + 1
 				end
@@ -480,7 +455,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 				guard ant_t > 0
 				action do 
 					set_dinfo(adddev.did, adddev.name, adddev.cat)
-					request_actuator!add_device(switch_id, adddev.name, adddev.cat)
+					request_actuator!add_device(adddev.did, adddev.name, adddev.cat)
 					ant_d = ant_d + 1
 					human_output!prompt("Please give thermostat temperature setting")
 				end
@@ -492,7 +467,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 				action do
 					id_pos(adddev.did,did_array)
 					set_dinfo(adddev.did, adddev.name, adddev.cat)				
-					request_actuator!add_device(switch_id,adddev.name, adddev.cat)
+					request_actuator!add_device(adddev.did,adddev.name, adddev.cat)
 					ant_d = ant_d + 1
 					human_output!prompt("Please give thermostat temperature setting") // SIMULATION: prompting on console for the user to react properly
 				end
@@ -536,6 +511,9 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						i = i + 1
 					end
 				end
+				transition -> SetThermostat
+				event human_input?set_temperature
+				
 			}
 			state SetThermostat {
 				// Here the only message we want is the set_temperature, but this is on one level up to move to Running
@@ -585,10 +563,14 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
 						//TODO:Bug need to be fixed. When device with cat 1 are placed in the first position, actuator do not turn it off or on.
-						//TODO:Try to modify while statment into function
+						//TODO:Try to modify while statement into function
 						i = 0						
 						while(i < capacity)do
+						print("\n i: ")
+						print(i)
 							if(dcat_array[i] == 1)do
+								print("\nslår av :")
+								print(did_array[i])
 								request_actuator!SwitchOff(did_array[i])
 							end
 							i = i + 1
@@ -603,7 +585,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 					guard guard_temp<tmrature-1
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
-						guard_temp = calc_all_temp()
+						guard_temp = calc_all_temp()						
 						i = 0
 						while(i < capacity)do
 							if(dcat_array[i] == 1)do
@@ -639,7 +621,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						i = 0
 						while(i < capacity)do
 							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOff(did_array[i])
+								request_actuator!SwitchOn(did_array[i])
 							end
 							i = i + 1
 						end
@@ -649,7 +631,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						lasttemp = guard_temp
 						
 					end
-					
 					transition -> TemprDecrease
 					event temp2:get_sensor?temperature
 					guard guard_temp>tmrature+1 
@@ -658,7 +639,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						guard_temp = calc_all_temp()
 						i = 0
 						while(i < capacity)do
-							if(dcat_array[i] == 1)do
+							if(dcat_array[i] == 1)do							
 								request_actuator!SwitchOff(did_array[i])
 							end
 							i = i + 1
@@ -711,7 +692,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 						i = 0
 						while(i < capacity)do
 							if(dcat_array[i] == 1)do
-								request_actuator!SwitchOff(did_array[i])
+								request_actuator!SwitchOn(did_array[i])
 							end
 							i = i + 1
 						end
@@ -727,7 +708,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs, ClockStuff {
 					end
 				}
 
-				
 				transition -> On
 				event swon:human_input?SwitchOn
 				action do
