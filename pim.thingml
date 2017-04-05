@@ -68,7 +68,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		sends add_device, SwitchOn, SwitchOff, add_period
 	}
 	provided port human_input {
-		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature, add_period, set_polling_interval,set_time,prompt
+		receives add_thermometer, add_device, SwitchOn, SwitchOff, set_temperature,/* add_period,*/ set_polling_interval,set_time,prompt
 	}
 	required port human_output {
 		sends temperature, prompt
@@ -292,15 +292,15 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		end
 		i = 0
 	end
-	
-	/*Time Periods variabler*/
+	/*
+	//Time Periods variabler
 	property tpname:String
 	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
 	//property comfort_max:Double
 	//property comfort_min:Double
 	property time_min:Integer = 0 //00:00:00
 	property time_max:Integer = 1439 //23:59:59
-	/*Time Periods arrays*/
+	//Time Periods arrays
 	property tpname_array:String[capacity]
 	property stime_array:Integer[capacity]
 	property etime_array:Integer[capacity]
@@ -309,7 +309,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 	property c1_array:Integer[capacity]
 	property c2_array:Boolean[capacity]
 	property c3_array:Boolean[capacity]
-	/*Time Periods help variables*/
+	//Time Periods help variables
 	property help:Integer
 	property help2:Integer
 	property empty:Integer = 0 //indicator of first empty position in tpname_array[]
@@ -340,11 +340,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		return true
 	end
 	function set_tpname(name:String):Boolean do
-		/*if(empty >= capacity)do 
-			human_output!prompt("ALERT! Maximum time periods reached!")
-			return false
-		end
-		if(check_name(name) == true)do*/
 			tpname_array[empty] = name
 			empty = empty + 1
 			return true
@@ -366,11 +361,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 			help = 0
 			help2 = 0
 			return true
-		/*end
-		human_output!prompt("ALERT:Start time or End time values is incorrect and cannot be set!")*/
-		//help = 0
-		//help2 = 0
-		//return false
 	end
 	
 	function check_period_s(sh:Integer, sm:Integer,eh:Integer, em:Integer):Boolean do
@@ -387,9 +377,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		return false
 	end
 //Time methods END
-//Comfort temperature START
-	
-//Comfort temperature END
 //Category ON/OFF START
 	function set_category1(i:Integer):Boolean do
 		//if(i >= 0 and i <=2)do
@@ -452,7 +439,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		//<If condition is true, return curren time period's pisition into current_period variable>
 		//<else go to the next period until we finde period>
 		return -1
-	end
+	end*/
 
 	statechart PIM_behavior init Build {
 		composite state Build init AddThermo keeps history {
@@ -521,16 +508,16 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					human_output!prompt("Thermometer already added, add device")
 				end
 				// temperature and set_temperature handled on Build level
-				transition -> TimePeriod
+			/*	transition -> TimePeriod
 				event addtp:human_input?add_period
 				guard a_periods < 10
 				action do
 					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, 1,1, addtp.cat1, addtp.cat2, addtp.cat3)
 					show_periods()
-				end
+				end*/
 				
 			}
-			state TimePeriod{
+			/*state TimePeriod{
 				transition -> TimePeriod
 				event addtp:human_input?add_period
 				guard a_periods < 10
@@ -540,7 +527,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				end
 				transition -> SetThermostat
 				event human_input?set_temperature
-			}
+			}*/
 			
 			state SetThermostat {
 				// Here the only message we want is the set_temperature, but this is on one level up to move to Running
@@ -575,12 +562,12 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 			action do
 				human_output!prompt("Please continue doing the build of the temperature control")
 			end
-			transition -> Build
+			/*transition -> Build
 			event fCS:from_CS?tp_info
 			action do
 				current_timePIM = fCS.time
 				print(current_timePIM)print(" SUCSESS! \n")
-			end 
+			end */
 		} // end Build
 				
 		composite state Running init Thermostat keeps history {

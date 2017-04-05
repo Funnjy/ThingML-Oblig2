@@ -8,7 +8,7 @@ import "pim.thingml"
 thing Human includes TemperatureMsg, GeneralMsg, OnOffMsg
 @mock "true"
 { 	required port send_cmd {
-		sends add_thermometer, add_device, add_period, SwitchOn, SwitchOff, set_temperature, set_polling_interval
+		sends add_thermometer, add_device, /*add_period,*/ SwitchOn, SwitchOff, set_temperature, set_polling_interval
 	}
 	provided port get_values {
 		receives temperature, prompt
@@ -19,6 +19,9 @@ thing Time includes TemperatureMsg, GeneralMsg, OnOffMsg,ClockStuff
 @mock "true"
 {
 	required port send_values{
-		sends set_time, add_period
+		sends add_period, set_time
+	}
+	provided port get_values{
+		receives prompt
 	}
 }

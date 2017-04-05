@@ -6,9 +6,11 @@ import "pim_messages.thingml"
 import "timer.thingml"
 
 thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
-	property current_time:LongLong = 100
-	required port output{
-		sends prompt
+	required port human_output{
+		sends prompt, set_time, add_period
+	}
+	provided port human_input{
+		receives add_period, set_time
 	}
 	required port to_PIM{
 		sends tp_info
@@ -17,6 +19,151 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 		receives timer_timeout
 		sends timer_start, timer_cancel
 	}
+	
+	//Variables
+	property i:Integer = 0
+	property current_time:LongLong = 100
+	property tpname:String
+	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
+	property time_min:Integer = 0 //00:00:00
+	property time_max:Integer = 1439 //23:59:59
+	/*Time Periods arrays*/
+	property capacity:Integer = 10
+	property tpname_array:String[capacity]
+	property stime_array:Integer[capacity]
+	property etime_array:Integer[capacity]
+	property comfort_min:Double[capacity]
+	property comfort_max:Double[capacity]
+	property c1_array:Integer[capacity]
+	property c2_array:Integer[capacity]
+	property c3_array:Integer[capacity]
+	/*Time Periods help variables*/
+	property help:Integer
+	property help2:Integer
+	property empty:Integer = 0 //indicator of first empty position in tpname_array[]
+	property a_periods:Integer = 0
+	property current_period:Integer = 0 //Behold position to actual time period
+	
+	function show_periods()do
+		i = 0
+		while (i <capacity)do
+			print("name ")print(tpname_array[i])print(" start")print(stime_array[i])print(" end")print(etime_array[i])print(" comfort")print(comfort_min[i])print(" c1")
+			print(c1_array[i])print(" c2")print(c2_array[i])print(" c3")print(c3_array[i])print("\n")
+			i = i + 1
+		end
+		print("\n")
+		i = 0
+	end
+//Name methods START
+	function check_name(name:String):Boolean do
+		i = 0
+		while(i < empty) do 
+			if(tpname_array[i] == name) do
+				human_output!prompt("ALERT! Time period name must be uniq!")
+				return false
+			end
+			i = i + 1 
+		end
+		i = 0
+		return true
+	end
+	function set_tpname(name:String):Boolean do
+			tpname_array[empty] = name
+			empty = empty + 1
+			return true
+	end
+//Name methods END
+//Time methods SART
+	function calc_hm(h:Integer, m:Integer):Integer do 
+		return h*60+m
+	end
+	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+		help = calc_hm(sh,sm)
+		help2 = calc_hm(eh,em)
+			stime_array[empty-1] = help
+			etime_array[empty-1] = help2
+			time_min = help
+			help = 0
+			help2 = 0
+			return true
+	end
+	
+	function check_period_s(sh:Integer, sm:Integer,eh:Integer, em:Integer):Boolean do
+		help = calc_hm(sh,sm)
+		help2 = calc_hm(eh,em)	
+		if(help >= time_min and help <= time_max and help < help2) return true
+		return false
+	end
+	
+	function check_period_e(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
+		help = calc_hm(sh,sm)
+		help2 = calc_hm(eh,em)	
+		if(help2 > help and help2 <= time_max) return true
+		return false
+	end
+//Time methods END
+//Category ON/OFF START
+	function set_category1(i:Integer) do
+			c1_array[empty-1] = i
+	end
+	function set_category2(i:Integer) do
+			if(i == 0)do c2_array[empty-1] = 0 end
+			if(i == 1)do c2_array[empty-1] = 1 end
+	end
+	
+	function set_category3(i:Integer) do
+			if(i == 0)do c3_array[empty-1] = 0 end
+			if(i == 1)do c3_array[empty-1] = 1 end 
+	end
+	
+	function check_cat1(i:Integer):Boolean do
+		if(i >= 0 and i <=2)do return true end
+		human_output!prompt("ALERT! Category 1 must be number between 0 and 2: 0-OFF, 1- ON, 2- Thermostat")
+		return false		
+	end
+	
+	function check_cat1_2(i:Integer, i2:Integer):Boolean do
+		if(i >= 0 and i <= 1 and i2 >= 0 and i2 <= 1)do return true end
+		
+		human_output!prompt("ALERT! Category 2 and 3 must be number between 0 and 1: 0-OFF, 1- ON")
+		return false
+	end
+//Category ON/OFF END
+	function tp_parameter_check(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer,comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
+		if(check_name(name) == false) do return false end
+		if(empty >= capacity) do return false end
+		if(check_period_s(sh,sm,eh,em) == false or check_period_e(sh,sm,eh,em) == false) return false
+		if(check_cat1(c1) == false) return false
+		if(check_cat1_2(c2,c3) == false) return false
+		if(comf_min < 0 or comf_max < 0) do human_output!prompt("Parameters for comfort temperature must be positive or 0") return false end
+		return true
+	end
+
+	function set_tp(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
+		if(tp_parameter_check(name,sh,sm,eh,em,comf_min, comf_max,c1,c2,c3) == true) do
+			set_tpname(name)
+		 	set_time(sh, sm, eh, em)
+		 	comfort_min[empty-1] = comf_min 
+		 	comfort_max[empty-1] = comf_max
+		 	set_category1(c1)
+		 	set_category2(c2)
+		 	set_category3(c3)
+		 	a_periods = a_periods + 1
+		 	return true
+		end
+		human_output!prompt("ALERT! One or more parameters is INVALID, adding blocked")
+		return false
+	end
+
+	function current_period(curr_time:Integer) do
+		i = 0
+		while(i < capacity)do
+			if(current_time >= stime_array[i] and current_time <= etime_array[i])do
+				to_PIM!tp_info(comfort_min[i], comfort_max[i], c1_array[i], c2_array[i], c3_array[i])
+			end
+			i = i + 1
+		end
+	end
 	
 	function updateNow()do	
 		current_time = 'new java.util.Date().getTime()'
@@ -29,23 +176,55 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 	
 	function getTime()do	end
 	
-	statechart TempPeriods init DecidePeriod{
+	statechart TempPeriods_behavior init BuildPeriods{
 	
-		composite state DecidePeriod init Do keeps history{
+		composite state BuildPeriods init AddPeriods keeps history{
 			on entry time_periods2!timer_start(15000) // 30s to do the whole build 
 			on exit time_periods2!timer_cancel()
-			state Do{
-				on entry print(current_time)
-				on exit print("\n")
+			state AddPeriods{
+				transition -> AddPeriods
+				event addtp:human_input?add_period
+				guard a_periods < 10 
+				action do 
+					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, 1,1, addtp.cat1, addtp.cat2, addtp.cat3)
+					show_periods()
+					print(a_periods)
+				end	
 			}
-			transition -> DecidePeriod
-			event time_periods2?timer_timeout
+			
+			transition -> BuildPeriods
+			event tp:time_periods2?timer_timeout
 			action do
-					
-				setTime(10,20) 
-				to_PIM!tp_info(current_time)
-				//input!prompt("TIMER OUT!\n")
+				human_output!prompt("Please continue doing the build of periods.")
+			end
+			
+			transition -> MonitorPeriods
+			event ntime:human_input?set_time
+			action do
+					current_time = setTime(ntime.current_h, ntime.current_m)
+					human_output!prompt("Entering state MonitorPeriods")
 			end
 		}
+			composite state MonitorPeriods init TimeShift keeps history{
+				on entry time_periods2!timer_start(15000)
+				on exit time_periods2!timer_cancel()
+				state TimeShift{
+					transition -> TimeShift
+					event time_periods2?timer_timeout
+					action do
+						if(a_periods != 0)do
+							current_period(current_time)// Send information about current period
+						end
+						if(a_periods == 0)do
+							human_output!prompt("No periods is defined, sending dafault instructions")
+						end
+					end
+				}
+				transition-> MonitorPeriods
+				event ntime:human_input?set_time
+				action do
+					current_time = setTime(ntime.current_h, ntime.current_m)
+				end
+			}
 	}//CLOCKSTUFF END
 }

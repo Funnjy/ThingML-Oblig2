@@ -8,7 +8,7 @@ thing fragment GeneralMsg {
 	message deviceinfo(did:Integer,name:String,model:String,proto:String, ttype:String,meth:Integer,lastCmd:String,lastValue:Long);
 	message set_polling_interval(intrvl:Integer) // how often the PSM will poll the thermometers in milliseconds
 	message prompt(txt:String) // meant to send a textual message out to the user
-	message tp_info(time:Integer)
+	message tp_info(c_min:Double, c_max:Double, c1_b:Integer, c2_b:Integer, c3_b:Integer)
 }
 /*thing fragment TimePeriods{
 	message add_period(name:String, stime:Integer, etime:Integer, comfort_t:Double, cat1:Integer, cat2:Integer, cat3:Integer)
