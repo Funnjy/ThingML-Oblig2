@@ -13,13 +13,14 @@ configuration CPS {
 	instance g_temp:TimerJava
 	instance g_humn:TimerJava
 	instance timer : TimerJava
-	instance clock: ClockStuff
+	instance t_periods : TimerJava
 	//instance tp:TimePeriods
 	
 	// SIMULATION
 	instance tg:TempSim
 	instance onoffobs:OnOffSim
 	instance gdg:GadgetSim
+		instance clock: ClockStuff
 	
 	// PSM
 	connector tlstick.to_T1 => T1.initial
@@ -43,6 +44,9 @@ configuration CPS {
 	
 	connector pim.guard_temperature =>g_temp.timer
 	connector pim.guard_human => g_humn.timer
+	connector pim.time_periods => t_periods.timer
+		connector clock.time_periods2 => t_periods.timer
+		connector clock.to_PIM => pim.from_CS
 	
 	// SIMULATION
 	connector tg.give_values => T1.get_values

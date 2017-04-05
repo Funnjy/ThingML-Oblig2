@@ -1,0 +1,51 @@
+import "datatypes.thingml"
+
+import "psm_sim.thingml"
+import "psm_datatypes_sim.thingml"
+import "pim_messages.thingml"
+import "timer.thingml"
+
+thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
+	property current_time:LongLong = 100
+	required port output{
+		sends prompt
+	}
+	required port to_PIM{
+		sends tp_info
+	}
+	required port time_periods2{
+		receives timer_timeout
+		sends timer_start, timer_cancel
+	}
+	
+	function updateNow()do	
+		current_time = 'new java.util.Date().getTime()'
+	end
+	
+	function setTime(h:Integer, m:Integer):Integer do
+		current_time = h*60+m
+		return current_time
+	end
+	
+	function getTime()do	end
+	
+	statechart TempPeriods init DecidePeriod{
+	
+		composite state DecidePeriod init Do keeps history{
+			on entry time_periods2!timer_start(15000) // 30s to do the whole build 
+			on exit time_periods2!timer_cancel()
+			state Do{
+				on entry print(current_time)
+				on exit print("\n")
+			}
+			transition -> DecidePeriod
+			event time_periods2?timer_timeout
+			action do
+					
+				setTime(10,20) 
+				to_PIM!tp_info(current_time)
+				//input!prompt("TIMER OUT!\n")
+			end
+		}
+	}//CLOCKSTUFF END
+}
