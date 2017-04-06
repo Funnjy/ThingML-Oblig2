@@ -13,45 +13,6 @@ import "psm_datatypes_sim.thingml"
 import "pim_messages.thingml"
 import "timer.thingml"
 import "ClockStuff.thingml"
-/*thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
-	property current_time:LongLong
-	required port output{
-		sends prompt
-	}
-	required port time_periods2{
-		receives timer_timeout
-		sends timer_start, timer_cancel
-	}
-	
-	function updateNow()do	
-		current_time = 'new java.util.Date().getTime()'
-	end
-	
-	function setTime(h:Integer, m:Integer):Integer do
-		current_time = h*60+m
-		return current_time
-	end
-	
-	function getTime()do	end
-	
-	statechart TempPeriods init DecidePeriod{
-	
-		composite state DecidePeriod init Do keeps history{
-			on entry time_periods2!timer_start(1500) // 30s to do the whole build 
-			on exit time_periods2!timer_cancel()
-			state Do{
-				on entry print(current_time)
-				on exit print("\n")
-			}
-			transition -> DecidePeriod
-			event time_periods2?timer_timeout
-			action do
-				setTime(10,20)
-				output!prompt("TIMER OUT!")
-			end
-		}
-	}//CLOCKSTUFF END
-}*/
 
 thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff*/ {
 	provided port from_CS{
@@ -100,11 +61,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
     
 	property tmrature:Double = 20 // the requested temperature for the room
 	property thermo_id:Integer // the single thermometer identifier
-	property thermo_w:Double //The single thermometer weight
 	property thermo_n:String //The single thermometer name
-	property switch_id:Integer // the single on-off switch identifier
-	property current_timePIM:Integer //in minuts
-	
+	property switch_id:Integer // the single on-off switch identifier	
 	property lasttemp:Double = 0 // the last temperature recorded, buffering one measurement
 	
 	//Oblig 2 variabler
@@ -115,9 +73,6 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 	property temptemp:Double = 0
 	property guard_temp:Double = 0
 	property capacity:Integer = 10 //kapasitet til arrays
-	property temp_iarray:Integer[capacity] //Help array to be used in functions
-	property temp_sarray:String[capacity] //Help array to be used in functions
-	property temp_darray:Double[capacity] //Help array to be used in functions
 	/*Thermometer variabler*/
 	property tid_array:Integer[capacity] //Id til thermometers
 	property tname_array:String[capacity] //names til thermometers
@@ -292,155 +247,78 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		end
 		i = 0
 	end
-	/*
-	//Time Periods variabler
-	property tpname:String
-	property sh:Integer = 0	property sm:Integer = 0	property eh:Integer = 0	property em:Integer = 0
-	//property comfort_max:Double
-	//property comfort_min:Double
-	property time_min:Integer = 0 //00:00:00
-	property time_max:Integer = 1439 //23:59:59
-	//Time Periods arrays
-	property tpname_array:String[capacity]
-	property stime_array:Integer[capacity]
-	property etime_array:Integer[capacity]
-	property comfort_min:Double[capacity]
-	property comfort_max:Double[capacity]
-	property c1_array:Integer[capacity]
-	property c2_array:Boolean[capacity]
-	property c3_array:Boolean[capacity]
-	//Time Periods help variables
-	property help:Integer
-	property help2:Integer
-	property empty:Integer = 0 //indicator of first empty position in tpname_array[]
-	property a_periods:Integer = 0
-	property current_period:Integer = 0 //Behold position to actual time period
 	
-	function show_periods()do
+	function heater_behavior():Boolean do
 		i = 0
-		while (i <capacity)do
-			print("name ")print(tpname_array[i])print(" start")print(stime_array[i])print(" end")print(etime_array[i])print(" comfort")print(comfort_min[i])print(" c1")
-			print(c1_array[i])print(" c2")print(c2_array[i])print(" c3")print(c3_array[i])print("\n")
-			i = i + 1
-		end
-		print("\n")
-		i = 0
-	end
-//Name methods START
-	function check_name(name:String):Boolean do
-		i = 0
-		while(i < empty) do 
-			if(tpname_array[i] == name) do
-				human_output!prompt("ALERT! Time period name must be uniq!")
-				return false
+		if(cs_device_behavior[0] == 0)do //0 for OFF, cs_device_behavior[0] for heater controls
+			while(i < capacity)do
+				if(dcat_array[i] == 1)do
+					request_actuator!SwitchOff(did_array[i])
+				end
+				i = i + 1
 			end
-			i = i + 1 
+			return true
+		end
+		if(cs_device_behavior[0] == 1)do //1 for ON, cs_device_behavior[0] for heater controls
+			while(i < capacity)do
+				if(dcat_array[i] == 1)do
+					request_actuator!SwitchOn(did_array[i])
+				end
+				i = i + 1
+			end
+			return true
+		end	
+		if(cs_device_behavior[0] == 2)do //2 for Thermostat, cs_device_behavior[0] for heater controls
+			while(i < capacity)do
+				if(dcat_array[i] == 1)do
+					return false//human_output!set_temperature(tid_array[0],tname_array[0], ttemp_array[0])//TODO: thermostat decide
+				end	i = i + 1
+			end
+			return false
 		end
 		i = 0
-		return true
-	end
-	function set_tpname(name:String):Boolean do
-			tpname_array[empty] = name
-			empty = empty + 1
-			return true
-		//end
-		//return false
-	end
-//Name methods END
-//Time methods SART
-	function calc_hm(h:Integer, m:Integer):Integer do 
-		return h*60+m
-	end
-	function set_time(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
-		help = calc_hm(sh,sm)
-		help2 = calc_hm(eh,em)
-		//if(check_period_s(sh, sm, eh, em) == true and check_period_e(sh, sm, eh, em) == true)do 
-			stime_array[empty-1] = help
-			etime_array[empty-1] = help2
-			time_min = help
-			help = 0
-			help2 = 0
-			return true
-	end
-	
-	function check_period_s(sh:Integer, sm:Integer,eh:Integer, em:Integer):Boolean do
-		help = calc_hm(sh,sm)
-		help2 = calc_hm(eh,em)	
-		if(help >= time_min and help <= time_max and help < help2) return true
 		return false
-	end
+	end//heater_behavior function
 	
-	function check_period_e(sh:Integer, sm:Integer, eh:Integer, em:Integer):Boolean do
-		help = calc_hm(sh,sm)
-		help2 = calc_hm(eh,em)	
-		if(help2 > help and help2 <= time_max) return true
-		return false
-	end
-//Time methods END
-//Category ON/OFF START
-	function set_category1(i:Integer):Boolean do
-		//if(i >= 0 and i <=2)do
-			c1_array[empty-1] = i
-		//end
-		return true
-	end
-	function set_category2(i:Integer):Boolean do
-			if(i == 0)do c2_array[empty-1] = false end
-			if(i == 1)do c2_array[empty-1] = true end
-		return true
-	end
-	
-	function set_category3(i:Integer):Boolean do
-			if(i == 0)do c3_array[empty-1] = false end
-			if(i == 1)do c3_array[empty-1] = true end
-		return true
-	end
-	function check_cat1(i:Integer):Boolean do
-		if(i >= 0 and i <=2)do return true end
-		human_output!prompt("ALERT! Category 1 must be number between 0 and 2: 0-OFF, 1- ON, 2- Thermostat")
-		return false		
-	end
-	function check_cat1_2(i:Integer, i2:Integer):Boolean do
-		if(i >= 0 and i <= 1 and i2 >= 0 and i2 <= 1)do return true end
-		
-		human_output!prompt("ALERT! Category 2 and 3 must be number between 0 and 1: 0-OFF, 1- ON")
-		return false
-	end
-//Category ON/OFF END
-	function tp_parameter_check(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer,comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
-		if(check_name(name) == false) do return false end
-		if(empty >= capacity) do return false end
-		if(check_period_s(sh,sm,eh,em) == false or check_period_e(sh,sm,eh,em) == false) return false
-		if(check_cat1(c1) == false) return false
-		if(check_cat1_2(c2,c3) == false) return false
-		if(comf_min < 0 or comf_max < 0) do human_output!prompt("Parameters for comfort temperature must be positive or 0") return false end
-		return true
-	end
-
-	function set_tp(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
-		if(tp_parameter_check(name,sh,sm,eh,em,comf_min, comf_max,c1,c2,c3) == true) do
-			set_tpname(name)
-		 	set_time(sh, sm, eh, em)
-		 	comfort_min[empty-1] = comf_min 
-		 	comfort_max[empty-1] = comf_max
-		 	set_category1(c1)
-		 	set_category2(c2)
-		 	set_category3(c3)
-		 	return true
+	function actuators_behavior()do
+		i = 0
+		if(cs_device_behavior[1] == 0/*TODO boolean*/)do
+			while(i < capacity)do
+				if(dcat_array[i] == 2)do
+					request_actuator!SwitchOff(did_array[i])
+				end	i = i + 1
+			end
 		end
-		human_output!prompt("ALERT! One or more parameters is INVALID, adding blocked")
-		return false
-	end
+		
+		if(cs_device_behavior[2] == 0/*TODO boolean*/)do
+			while(i < capacity)do
+				if(dcat_array[i] == 3)do
+					request_actuator!SwitchOff(did_array[i])
+				end	i = i + 1
+			end
+		end
+		if(cs_device_behavior[1] == 1/*TODO boolean*/)do
+			while(i < capacity)do
+				if(dcat_array[i] == 2)do
+					request_actuator!SwitchOn(did_array[i])
+				end	i = i + 1
+			end
+		end
+		
+		if(cs_device_behavior[2] == 1/*TODO boolean*/)do
+			while(i < capacity)do
+				if(dcat_array[i] == 3)do
+					request_actuator!SwitchOn(did_array[i])
+				end	i = i + 1
+			end
+		end
+		i = 0
+	end//Actuators_behavior function
 	
-	function current_period(curr_time:Integer):Integer do
-		//<Check i some periods exist>
-		//<If periods exist gå into while loop>
-		//<In while loop compare current_time and tp_start and tp_end>
-		//<If condition is true, return curren time period's pisition into current_period variable>
-		//<else go to the next period until we finde period>
-		return -1
-	end*/
-
+	//Variables from ClockStuff that should chenge behavior of actuators
+	property cs_minmax:Double[2]
+	property cs_device_behavior:Integer[3]
+	
 	statechart PIM_behavior init Build {
 		composite state Build init AddThermo keeps history {
 		on entry guard_human!timer_start(30000) // 30s to do the whole build 
@@ -508,26 +386,8 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					human_output!prompt("Thermometer already added, add device")
 				end
 				// temperature and set_temperature handled on Build level
-			/*	transition -> TimePeriod
-				event addtp:human_input?add_period
-				guard a_periods < 10
-				action do
-					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, 1,1, addtp.cat1, addtp.cat2, addtp.cat3)
-					show_periods()
-				end*/
 				
 			}
-			/*state TimePeriod{
-				transition -> TimePeriod
-				event addtp:human_input?add_period
-				guard a_periods < 10
-				action do
-					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, addtp.comfort_min, addtp.comfort_max, addtp.cat1, addtp.cat2, addtp.cat3)	
-					show_periods()				
-				end
-				transition -> SetThermostat
-				event human_input?set_temperature
-			}*/
 			
 			state SetThermostat {
 				// Here the only message we want is the set_temperature, but this is on one level up to move to Running
@@ -556,18 +416,17 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 			action do 
 				// just discard, the thermostat is not running, yet (161103)
 			end
-				
+			transition -> Build
+			event tpinfo:from_CS?tp_info
+			action do
+				//just discard, the thermostat is not running, yet (161103)
+			end
+
 			transition -> Build
 			event tmout:guard_human?timer_timeout
 			action do
 				human_output!prompt("Please continue doing the build of the temperature control")
 			end
-			/*transition -> Build
-			event fCS:from_CS?tp_info
-			action do
-				current_timePIM = fCS.time
-				print(current_timePIM)print(" SUCSESS! \n")
-			end */
 		} // end Build
 				
 		composite state Running init Thermostat keeps history {
@@ -578,23 +437,23 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				on exit guard_temperature!timer_cancel()
 					transition -> TemprDecrease
 					event temp2:get_sensor?temperature
-					guard guard_temp>=tmrature-1  // We choose switch OFF as much as we can here
+					guard guard_temp>=tmrature-cs_minmax[0]//1  // We choose switch OFF as much as we can here
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
-					 	switch_allheat_off()
-						//request_actuator!SwitchOff(switch_id)
+					 	if(heater_behavior() == false) do switch_allheat_off() end
+						actuators_behavior()
 						lasttemp = guard_temp
 					end
 					
 					transition -> TemprIncrease
 					event temp2:get_sensor?temperature
-					guard guard_temp<tmrature-1
+					guard guard_temp<tmrature-cs_minmax[0]//1
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()						
-						switch_allheat_on()	
-						//request_actuator!SwitchOn(switch_id)
+						if(heater_behavior() == false) do switch_allheat_on() end
+						actuators_behavior()
 						lasttemp = guard_temp
 					end
 					
@@ -611,26 +470,26 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				
 					transition -> TemprIncrease 
 					event temp:get_sensor?temperature
-					guard guard_temp<=tmrature+1
+					guard guard_temp<=tmrature+cs_minmax[1]//1
 					action do
 						set_wtemp(temp.id, temp.t,tid_array)
 						guard_temp = calc_all_temp()
 						// TRACING to follow thermostat print("TempIncrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
 						if (lasttemp>guard_temp)do
-						switch_allheat_on()
-						// request_actuator!SwitchOn(switch_id) // the temperature is still falling even though switch should be ON, reactivate
+							if(heater_behavior() == false) do switch_allheat_on()	end	 // the temperature is still falling even though switch should be ON, reactivate
+							actuators_behavior()
 						end
 						lasttemp = guard_temp
 					end
 					
 					transition -> TemprDecrease
 					event temp2:get_sensor?temperature
-					guard guard_temp>tmrature+1 
+					guard guard_temp>tmrature+cs_minmax[1]//1 
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
-						switch_allheat_off()
-						//request_actuator!SwitchOff(switch_id)
+						if(heater_behavior() == false) do switch_allheat_off()	end
+						actuators_behavior()
 						lasttemp = guard_temp						
 					end
 					
@@ -647,27 +506,26 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				
 					transition-> TemprDecrease
 					event temp:get_sensor?temperature
-					guard guard_temp>=tmrature-1
+					guard guard_temp>=tmrature-cs_minmax[0]//1
 					action do
 						set_wtemp(temp.id, temp.t,tid_array)
 						guard_temp = calc_all_temp()
 						// TRACING to follow thermostat print("TempDecrease: Observed=") print(temp.t) print(" Desired ") print(tmrature) print("\n") 
 						if (lasttemp<guard_temp) do
-						switch_allheat_off()	
-						//request_actuator!SwitchOff(switch_id) // the temperature is still rising even though switch should be OFF, reactivate
+							if(heater_behavior() == false) do switch_allheat_off() end  // the temperature is still rising even though switch should be OFF, reactivate
+							actuators_behavior()	
 						end
-						lasttemp = guard_temp
-						
+						lasttemp = guard_temp						
 					end
 					
 					transition -> TemprIncrease
 					event temp2:get_sensor?temperature
-					guard guard_temp<tmrature-1
+					guard guard_temp<tmrature-cs_minmax[0]//1
 					action do
 						set_wtemp(temp2.id, temp2.t,tid_array)
 						guard_temp = calc_all_temp()
-						switch_allheat_on()
-						//request_actuator!SwitchOn(switch_id)
+						if(heater_behavior() == false) do switch_allheat_on()	end
+						actuators_behavior()
 						lasttemp = guard_temp
 					end
 					
@@ -741,7 +599,17 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					lasttemp = temp.t
 				end
 			}
-			
+			transition -> Running
+			event tpinfo:from_CS?tp_info
+			action do
+				cs_minmax[0] = tpinfo.c_min //Minimal comfort temperature
+				cs_minmax[1] = tpinfo.c_max	//Maximal comfort temperature
+				cs_device_behavior[0] = tpinfo.c1_b //Device category 1 behavior
+				cs_device_behavior[1] = tpinfo.c2_b	//Device category 1 behavior
+				cs_device_behavior[2] = tpinfo.c3_b	//Device category 1 behavior
+				human_output!prompt("Device behavior variables got an updated!")
+				//print(cs_minmax[0])print(" ")print(cs_device_behavior[0])
+			end
 			// Transitions of the composite state Running
 			transition -> Running
 			event pollint:human_input?set_polling_interval
