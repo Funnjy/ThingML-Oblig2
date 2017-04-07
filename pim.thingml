@@ -176,6 +176,13 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 	property dname_array:String[capacity] //Name beholder
 	property dcat_array:Integer[capacity] //Category beholder 
 	/*Device functions*/
+	function show_all_devices()do //Temp function to list all devices
+		i = 0
+		while(i < capacity)do
+			print("Device ID: ")print(did_array[i])print(" Device Name: ")print(dname_array[i])print(" Device category: ")print(dcat_array[i])print("\n")
+			i = i + 1
+		end
+	end
 	function set_dinfo(did:Integer, name:String, dcat:Integer):Integer do //Set new device
 		if(dparameter_check(did, dcat) == 1)do
 			i = get_did_e_pos()
@@ -271,7 +278,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		if(cs_device_behavior[0] == 2)do //2 for Thermostat, cs_device_behavior[0] for heater controls
 			while(i < capacity)do
 				if(dcat_array[i] == 1)do
-					return false//human_output!set_temperature(tid_array[0],tname_array[0], ttemp_array[0])//TODO: thermostat decide
+					return false
 				end	i = i + 1
 			end
 			return false
@@ -289,7 +296,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				end	i = i + 1
 			end
 		end
-		
+		i = 0
 		if(cs_device_behavior[2] == 0/*TODO boolean*/)do
 			while(i < capacity)do
 				if(dcat_array[i] == 3)do
@@ -297,6 +304,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				end	i = i + 1
 			end
 		end
+		i = 0
 		if(cs_device_behavior[1] == 1/*TODO boolean*/)do
 			while(i < capacity)do
 				if(dcat_array[i] == 2)do
@@ -304,7 +312,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				end	i = i + 1
 			end
 		end
-		
+		i = 0
 		if(cs_device_behavior[2] == 1/*TODO boolean*/)do
 			while(i < capacity)do
 				if(dcat_array[i] == 3)do
@@ -359,6 +367,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					set_dinfo(adddev.did, adddev.name, adddev.cat)
 					request_actuator!add_device(adddev.did, adddev.name, adddev.cat)
 					ant_d = ant_d + 1
+					show_all_devices()
 					human_output!prompt("Please add more switch devices or give thermostat temperature setting")
 				end
 			}
@@ -371,6 +380,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					set_dinfo(adddev.did, adddev.name, adddev.cat)				
 					request_actuator!add_device(adddev.did,adddev.name, adddev.cat)
 					ant_d = ant_d + 1
+					show_all_devices()
 					human_output!prompt("Please add more switch devices or give thermostat temperature setting") // SIMULATION: prompting on console for the user to react properly
 				end
 				transition -> AddDevice
@@ -575,6 +585,23 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					if (lasttemp>temp.t) request_actuator!SwitchOn(switch_id) // temperature is falling even when ON. Reactivate.
 					lasttemp = temp.t
 				end
+				transition -> Thermostat
+				event tpinfo:from_CS?tp_info
+				action do
+				cs_minmax[0] = tpinfo.c_min //Minimal comfort temperature
+				cs_minmax[1] = tpinfo.c_max	//Maximal comfort temperature
+				cs_device_behavior[0] = tpinfo.c1_b //Device category 1 behavior
+				cs_device_behavior[1] = tpinfo.c2_b	//Device category 1 behavior
+				cs_device_behavior[2] = tpinfo.c3_b	//Device category 1 behavior
+				human_output!prompt("Device behavior variables got an updated!")
+				human_output!prompt("Minimum comfort temperature: " + cs_minmax[0] 	
+								+ ", maximum comfort temperature: " + cs_minmax[1] 
+								+ ", device category 1 is set to be: " + cs_device_behavior[0] 
+								+ ", device category 2 is set to be: " + cs_device_behavior[1]
+								+ ", device category 3 is set to be: " + cs_device_behavior[2] 
+								+ ". Where 0=OFF, 1=ON and 2=thermostat modus." )
+				//print(cs_minmax[0])print(" ")print(cs_device_behavior[0])
+				end
 			}
 			state Off {
 				transition -> Off
@@ -598,6 +625,23 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					if (lasttemp<temp.t) request_actuator!SwitchOff(switch_id) // temperature is rising even when OFF. Reactivate.
 					lasttemp = temp.t
 				end
+				transition -> Thermostat
+				event tpinfo:from_CS?tp_info
+				action do
+				cs_minmax[0] = tpinfo.c_min //Minimal comfort temperature
+				cs_minmax[1] = tpinfo.c_max	//Maximal comfort temperature
+				cs_device_behavior[0] = tpinfo.c1_b //Device category 1 behavior
+				cs_device_behavior[1] = tpinfo.c2_b	//Device category 1 behavior
+				cs_device_behavior[2] = tpinfo.c3_b	//Device category 1 behavior
+				human_output!prompt("Device behavior variables got an updated!")
+				human_output!prompt("Minimum comfort temperature: " + cs_minmax[0] 	
+								+ ", maximum comfort temperature: " + cs_minmax[1] 
+								+ ", device category 1 is set to be: " + cs_device_behavior[0] 
+								+ ", device category 2 is set to be: " + cs_device_behavior[1]
+								+ ", device category 3 is set to be: " + cs_device_behavior[2] 
+								+ ". Where 0=OFF, 1=ON and 2=thermostat modus." )
+				//print(cs_minmax[0])print(" ")print(cs_device_behavior[0])
+				end
 			}
 			transition -> Running
 			event tpinfo:from_CS?tp_info
@@ -608,6 +652,12 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				cs_device_behavior[1] = tpinfo.c2_b	//Device category 1 behavior
 				cs_device_behavior[2] = tpinfo.c3_b	//Device category 1 behavior
 				human_output!prompt("Device behavior variables got an updated!")
+				human_output!prompt("Minimum comfort temperature: " + cs_minmax[0] 	
+								+ ", maximum comfort temperature: " + cs_minmax[1] 
+								+ ", device category 1 is set to be: " + cs_device_behavior[0] 
+								+ ", device category 2 is set to be: " + cs_device_behavior[1]
+								+ ", device category 3 is set to be: " + cs_device_behavior[2] 
+								+ ". Where 0=OFF, 1=ON and 2=thermostat modus." )
 				//print(cs_minmax[0])print(" ")print(cs_device_behavior[0])
 			end
 			// Transitions of the composite state Running

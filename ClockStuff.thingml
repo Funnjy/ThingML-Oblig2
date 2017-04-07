@@ -19,7 +19,6 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 		receives timer_timeout
 		sends timer_start, timer_cancel
 	}
-	
 	//Variables
 	property i:Integer = 0
 	property current_time:LongLong = 100
@@ -41,7 +40,7 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 	property empty:Integer = 0 //indicator of first empty position in tpname_array[]
 	property a_periods:Integer = 0
 	
-	function show_periods()do //Temp function
+	function show_periods()do //Temporary function
 		i = 0
 		while (i <capacity)do
 			print("name ")print(tpname_array[i])print(" start")print(stime_array[i])print(" end")print(etime_array[i])print(" comfort")print(comfort_min[i])print(" c1")
@@ -194,7 +193,8 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 			transition -> BuildPeriods
 			event tp:time_periods2?timer_timeout
 			action do
-				to_PIM!tp_info(1, 1, 2, 0, 0) //In case of thermometers and devices are build first
+//Default configurations: comfort_t min = temperature - 1, comfort_t max = temperature + 1, category 1 = THERMOSTAT, category 2 and 3 = OFF
+				to_PIM!tp_info(1, 1, 2, 0, 0) //In case of if thermometers and devices are build first they would work using this parameters
 				human_output!prompt("Please continue doing the build of periods.")
 			end
 			
