@@ -41,7 +41,7 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 	property empty:Integer = 0 //indicator of first empty position in tpname_array[]
 	property a_periods:Integer = 0
 	
-	function show_periods()do
+	function show_periods()do //Temp function
 		i = 0
 		while (i <capacity)do
 			print("name ")print(tpname_array[i])print(" start")print(stime_array[i])print(" end")print(etime_array[i])print(" comfort")print(comfort_min[i])print(" c1")
@@ -56,7 +56,7 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 		i = 0
 		while(i < empty) do 
 			if(tpname_array[i] == name) do
-				human_output!prompt("ALERT! Time period name must be uniq!")
+				human_output!prompt("ALERT! Time period's name must be unique!")
 				return false
 			end
 			i = i + 1 
@@ -127,16 +127,18 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 	end
 //Category ON/OFF END
 	function tp_parameter_check(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer,comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
-		if(check_name(name) == false) do return false end
-		if(empty >= capacity) do return false end
-		if(check_period_s(sh,sm,eh,em) == false or check_period_e(sh,sm,eh,em) == false) return false
-		if(check_cat1(c1) == false) return false
-		if(check_cat1_2(c2,c3) == false) return false
+		if(check_name(name) == false) do human_output!prompt("ALERT: Period NAME must be unique. Time period with given NAME already exists. Please try another NAME.") return false end
+		if(empty >= capacity) do human_output!prompt("ALERT: 10 of 10 possible time periods is set up.") return false end
+		if(check_period_s(sh,sm,eh,em) == false or check_period_e(sh,sm,eh,em) == false) do human_output!prompt("ALERT! Period's START time or END time overlap each other or is not set properly. Start time must be < then End time.") return false end
+		if(check_cat1(c1) == false) do human_output!prompt("ALERT! Category 1 must be Integer value between 0 and 2: 0=OFF, 1=ON, 2=Thermostat.") return false end
+		if(check_cat1_2(c2,c3) == false) do human_output!prompt("ALERT! Category 2 and 3 must be Integer value between 0 and 1: 0=OFF, 1=ON.") return false end
 		if(comf_min < 0 or comf_max < 0) do human_output!prompt("Parameters for comfort temperature must be positive or 0") return false end
 		return true
 	end
 
 	function set_tp(name:String,sh:Integer, sm:Integer, eh:Integer, em:Integer, comf_min:Double, comf_max:Double, c1:Integer, c2:Integer, c3:Integer):Boolean do
+		if(sh < 0 or sh >= 24 or sm < 0 or sm >= 60) do human_output!prompt("ALERT: Start hour must be 0 or 23. Start minuts must be 0 or 59.")  return false end
+		if(eh < 0 or eh >= 24 or em < 0 or em >= 60) do human_output!prompt("ALERT: End hour must be 0 or 23. End minuts must be 0 or 59.")  return false end
 		if(tp_parameter_check(name,sh,sm,eh,em,comf_min, comf_max,c1,c2,c3) == true) do
 			set_tpname(name)
 		 	set_time(sh, sm, eh, em)
@@ -185,7 +187,7 @@ thing  ClockStuff includes GeneralMsg, TimerMsgs, TemperatureMsg{
 				action do 
 					set_tp(addtp.name,addtp.sh, addtp.sm, addtp.eh, addtp.em, addtp.comfort_min, addtp.comfort_max, addtp.cat1, addtp.cat2, addtp.cat3)
 					//show_periods()
-					print(a_periods)
+					//print(a_periods)
 				end	
 			}
 			

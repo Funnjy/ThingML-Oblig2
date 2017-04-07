@@ -94,21 +94,21 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 			set_weight(tid, twight, id_array)
 			return true
 		end
-		human_output!prompt("ALERT: Check parameters!")
 		i = 0
+		human_output!prompt("ALERT: Please control parameters. One or more parameters for device is invalid. Adding of device is blocked.")
 		return false
 	end
 	
 	function tparameter_check(tid:Integer, twight:Double, ttemp:Double):Integer do 
-		if(tid_array[capacity-1] != 0)do return -1 end
-		if(tid <= 0) do	return -1 end
-		if(tid_u_check(tid, tid_array) == 1)do return -1 end
-		if(twight <= 0)do return -1	end
-		if(ttemp < -40 and ttemp > 50)do return -1 end
+		if(tid_array[capacity-1] != 0)do human_output!prompt("ALERT: There are no empty positions. 10 of 10 thermometers added.") return -1 end
+		if(tid <= 0) do	human_output!prompt("ALERT: ID parameter is invalid. ID must be greater then 0.") return -1 end //Check if ID > 0
+		if(tid_u_check(tid, tid_array) == 1)do human_output!prompt("ALERT: ID must be unique. Thermometer with given ID already exists. Please try another ID.") return -1 end //Check if ID already exist
+		if(twight <= 0)do human_output!prompt("ALERT: Thermometer weight cannot be 0 or less then 0.") return -1	end //Check if wight > 0 
+		if(ttemp < -40 and ttemp > 50)do human_output!prompt("ALERT: Temperature cannot be less then -40 or more then 50.") return -1 end //Check if temperature is in valid range
 		return 1
 	end
 	
-	function tid_u_check(tid:Integer, arr:Integer[capacity]):Integer do
+	function tid_u_check(tid:Integer, arr:Integer[capacity]):Integer do //Check if ID is unique
 		i = 0
 		while(i < capacity)do
 			if(arr[0] == 0) return -1 
@@ -123,13 +123,13 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		id_array[e_pos] = id
 	end
 	
-	function set_name(id:Integer, name:String, arr:String[capacity], id_array:Integer[capacity]) do
+	function set_name(id:Integer, name:String, arr:String[capacity], id_array:Integer[capacity]) do //Set name into array tname_array
  		i = id_pos(id, id_array)
 		arr[i] = name
 		i = 0
  	end
  	
-	function set_weight(tid:Integer, wight:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		twight_array[i] = wight i = 0	end 	//*Set wight that are equale to ID
+	function set_weight(tid:Integer, wight:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		twight_array[i] = wight i = 0	end //*Set wight that are == to ID
 	function set_wtemp(tid:Integer, temp:Double, id_array:Integer[]) do i = id_pos(tid, id_array)		ttemp_array[i] = temp * twight_array[i]	i = 0 end 	//Set calculated(temp*weight) 
 	function calc_temp(tid:Integer, temp:Double, w:Double):Double do //calculates temperatured with weights
 		i = id_pos(tid, tid_array)
@@ -159,7 +159,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		return -1
 	end
 	
-	function get_tid_e_pos(arr:Integer[]):Integer do 	//Return first empty position i tid_array[] 
+	function get_tid_e_pos(arr:Integer[]):Integer do 	//Return first empty position in tid_array[] 
 		i = 0
 		while(i < capacity) do
 			if(arr[i] == 0) do
@@ -173,10 +173,10 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 	
 	/*Device variabls*/
 	property did_array:Integer[capacity] //Id beholder
-	property dname_array:String[capacity] //Name Beholder
+	property dname_array:String[capacity] //Name beholder
 	property dcat_array:Integer[capacity] //Category beholder 
 	/*Device functions*/
-	function set_dinfo(did:Integer, name:String, dcat:Integer):Integer do 
+	function set_dinfo(did:Integer, name:String, dcat:Integer):Integer do //Set new device
 		if(dparameter_check(did, dcat) == 1)do
 			i = get_did_e_pos()
 			set_id(did, i, did_array)
@@ -190,15 +190,15 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 			i = 0
 			return 1
 		end
-		human_output!prompt("ALERT: Check parameters!")
+		human_output!prompt("ALERT: Please control parameters. One or more parameters for device is invalid. Adding of device is blocked.")
 		return -1
 	end
 	
 	function dparameter_check(did:Integer, dcat:Integer):Integer do//check if parameters is valid
-		if(did_array[capacity-1] != 0) do return -1 end
-		if(did <= 0)do return -1 end
-		if(tid_u_check(did, did_array) == 1) do return -1 end
-		if(dcat <= 0 and dcat > 3) do return -1 end
+		if(did_array[capacity-1] != 0) do human_output!prompt("ALERT: There are no empty positions. 10 of 10 devices added.") return -1 end //Have empty positions?
+		if(did <= 0)do human_output!prompt("ALERT: ID parameter is invalid. ID must be greater then 0.") return -1 end	//Check that ID have right 
+		if(tid_u_check(did, did_array) == 1) do human_output!prompt("ALERT: ID must be unique. Device with given ID already exists. Please try another ID.") return -1 end 
+		if(dcat <= 0 and dcat >= 3) do human_output!prompt("ALERT: Device category can have one of following parameters: 1, 2 or 3.") return -1 end
 		return 1
 	end
 	
@@ -248,7 +248,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 		i = 0
 	end
 	
-	function heater_behavior():Boolean do
+	function heater_behavior():Boolean do 
 		i = 0
 		if(cs_device_behavior[0] == 0)do //0 for OFF, cs_device_behavior[0] for heater controls
 			while(i < capacity)do
@@ -331,7 +331,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					thermo_id=addt.id
 					request_sensor!add_thermometer(thermo_id,addt.txt, addt.w)
 					set_tinfo(thermo_id, addt.txt, addt.w, 0.0, tid_array)		
-					human_output!prompt("Please add one switch device") // SIMULATION: prompting on console for the user to react properly
+					human_output!prompt("Please add switch device or more thermometers. Up to 10 thermometers can be added.") // SIMULATION: prompting on console for the user to react properly
 					ant_t = ant_t + 1
 				end
 				transition -> AddThermo // Cover other messages
@@ -341,7 +341,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				event human_input?set_temperature
 				event human_input?set_polling_interval
 				action do
-					human_output!prompt("Please add thermometer")
+					human_output!prompt("Please add at least 1 thermometer first! You can add up to 10 thermometers.")
 				end
 				// temperature is handled on Build level
 				
@@ -349,7 +349,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				event human_input?add_device
 				guard ant_t == 0 
 				action do
-					human_output!prompt("Please add at least 1 thermometer first!")
+					human_output!prompt("Please add at least 1 thermometer first! You can add up to 10 thermometers.")
 				end
 				
 				transition -> AddDevice
@@ -359,7 +359,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					set_dinfo(adddev.did, adddev.name, adddev.cat)
 					request_actuator!add_device(adddev.did, adddev.name, adddev.cat)
 					ant_d = ant_d + 1
-					human_output!prompt("Please give thermostat temperature setting")
+					human_output!prompt("Please add more switch devices or give thermostat temperature setting")
 				end
 			}
 			state AddDevice {
@@ -371,7 +371,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 					set_dinfo(adddev.did, adddev.name, adddev.cat)				
 					request_actuator!add_device(adddev.did,adddev.name, adddev.cat)
 					ant_d = ant_d + 1
-					human_output!prompt("Please give thermostat temperature setting") // SIMULATION: prompting on console for the user to react properly
+					human_output!prompt("Please add more switch devices or give thermostat temperature setting") // SIMULATION: prompting on console for the user to react properly
 				end
 				transition -> AddDevice
 				event human_input?SwitchOn
@@ -383,7 +383,7 @@ thing PIM includes GeneralMsg, TemperatureMsg, OnOffMsg, TimerMsgs/*, ClockStuff
 				transition -> AddDevice
 				event human_input?add_thermometer
 				action do
-					human_output!prompt("Thermometer already added, add device")
+					human_output!prompt("Thermometer(s) already added, add one or more devices. Up to 10 devices can be added.")
 				end
 				// temperature and set_temperature handled on Build level
 				
